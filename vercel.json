@@ -2,10 +2,5 @@
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
-  "framework": "nextjs",
-  "projectSettings": {
-    "name": "IT Website Requests Form",
-    "rootDirectory": "./",
-    "outputDirectory": ".next"
-  }
+  "framework": "nextjs"
 }
