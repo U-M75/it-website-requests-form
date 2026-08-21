@@ -5,67 +5,65 @@ export default async function handler(req, res) {
 
   const { formData, channel } = req.body;
 
-  if (!formData || !channel) {
-    return res.status(400).json({ error: 'Missing form data or channel' });
+  if (!formData) {
+    return res.status(400).json({ error: 'Missing form data' });
   }
 
   try {
     const messageText = `🎫 *New IT/Website Request*
 *Submitter:* ${formData.user}
 *Category:* ${formData.category}
+${formData.otherExplain ? `*Other:* ${formData.otherExplain}` : ''}
 *Priority:* ${formData.priority}
 *Platform:* ${formData.platform}
 
 *Where it's Happening:*
 ${formData.whereHappening}
 
-*Description:*
-${formData.description}`;
+${formData.expectedVsActual ? `*Expected vs. Actual:*
+${formData.expectedVsActual}` : ''}
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+*Description:*
+${formData.description}
+
+${formData.attachmentCount ? `*Attachments:* ${formData.attachmentCount} file(s)` : ''}`;
+
+    const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+
+    if (!webhookUrl) {
+      return res.status(500).json({ 
+        success: false, 
+        error: 'SLACK_WEBHOOK_URL not configured' 
+      });
+    }
+
+    const response = await fetch(webhookUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.ANTHROPIC_API_KEY}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 500,
-        messages: [
-          {
-            role: 'user',
-            content: `Send this message to Slack channel #${channel}: "${messageText}"`,
-          },
-        ],
-        mcp_servers: [
-          {
-            type: 'url',
-            url: 'https://mcp.slack.com/mcp',
-            name: 'slack-mcp',
-          },
-        ],
+        text: messageText,
+        channel: channel,
       }),
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
 
-    if (!response.ok) {
-      throw new Error('Slack API error: ' + (data.error?.message || 'Unknown error'));
+    if (response.ok || responseText === 'ok') {
+      return res.status(200).json({ 
+        success: true, 
+        message: 'Posted to Slack' 
+      });
+    } else {
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Failed to post to Slack: ' + responseText 
+      });
     }
-
-    const responseText = data.content?.filter(c => c.type === 'text')?.map(c => c.text)?.join('').toLowerCase() || '';
-    const success = responseText.includes('success') || responseText.includes('posted') || !responseText.includes('error');
-
-    return res.status(200).json({
-      success,
-      message: success ? 'Message posted to Slack' : 'Failed to post message',
-      channel,
-    });
   } catch (error) {
     console.error('Error posting to Slack:', error);
-    return res.status(500).json({
-      success: false,
-      error: error.message || 'Internal server error',
+    return res.status(500).json({ 
+      success: false, 
+      error: error.message 
     });
   }
 }
