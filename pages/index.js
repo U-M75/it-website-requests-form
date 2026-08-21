@@ -21,6 +21,17 @@ export default function Home() {
   const [tokenWarning, setTokenWarning] = useState(false);
   const conversationRef = useRef([]);
 
+  // Slack users dropdown
+  const slackUsers = [
+    'umaima',
+    'john.doe',
+    'jane.smith',
+    'team-lead',
+    'alex.dev',
+    'sarah.admin',
+    'rohan.designer'
+  ];
+
   const categoryOptions = ['UI/Design Bug', 'Functionality Issue', 'Mobile Responsive', 'New Feature Request', 'Security/Access', 'Other'];
   
   const platformOptions = [
@@ -35,11 +46,29 @@ export default function Home() {
     'Other'
   ];
 
-  const channelOptions = ['flow-test', 'general', 'it-requests', 'bugs', 'features', 'other'];
+  // Platform to Channel mapping
+  const platformChannelMap = {
+    'Retail - Kawaii Slime Company Web': 'flow-test',
+    'Retail - Jellyland USA Web': 'flow-test',
+    'B2B - The Kawaii Company': 'flow-test',
+    'Disney POS': 'flow-test',
+    'Slack': 'flow-test',
+    'Microsoft Sharepoint': 'flow-test',
+    'Zendesk': 'flow-test',
+    'Social Media': 'flow-test',
+    'Other': 'flow-test',
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handlePlatformChange = (e) => {
+    const platform = e.target.value;
+    setFormData(prev => ({ ...prev, platform }));
+    // Auto-select channel based on platform
+    setSelectedChannel(platformChannelMap[platform] || 'flow-test');
   };
 
   const handleFileChange = (e) => {
@@ -95,7 +124,7 @@ Attachments: ${entry.data.attachments ? entry.data.attachments.length + ' file(s
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.user || !formData.category || !formData.platform || !formData.whereHappening || !selectedChannel) {
+    if (!formData.user || !formData.category || !formData.platform || !formData.whereHappening) {
       alert('Please fill all required fields');
       return;
     }
@@ -153,6 +182,7 @@ Attachments: ${entry.data.attachments ? entry.data.attachments.length + ' file(s
           attachments: [],
           description: '' 
         });
+        setSelectedChannel('flow-test');
       } else {
         alert('❌ Failed: ' + (result.error || 'Unknown error'));
       }
@@ -161,6 +191,23 @@ Attachments: ${entry.data.attachments ? entry.data.attachments.length + ' file(s
     } finally {
       setLoading(false);
     }
+  };
+
+  const selectStyle = {
+    width: '100%',
+    padding: '10px',
+    paddingRight: '35px',
+    backgroundColor: '#0f1419',
+    border: '1px solid #444',
+    borderRadius: '6px',
+    color: '#e0e0e0',
+    fontSize: '14px',
+    boxSizing: 'border-box',
+    appearance: 'none',
+    backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e0e0e0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'right 10px center',
+    backgroundSize: '1.5em',
   };
 
   return (
@@ -210,16 +257,19 @@ Attachments: ${entry.data.attachments ? entry.data.attachments.length + ' file(s
           <form onSubmit={handleSubmit}>
             <div style={{ backgroundColor: '#1a1e27', border: '1px solid #333', borderRadius: '8px', padding: '24px' }}>
               
-              {/* Your Name */}
+              {/* Your Name - DROPDOWN */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Your Name *</label>
-                <input type="text" name="user" value={formData.user} onChange={handleInputChange} placeholder="Enter your name" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box' }} />
+                <select name="user" value={formData.user} onChange={handleInputChange} style={selectStyle}>
+                  <option value="">Select a user</option>
+                  {slackUsers.map(user => <option key={user} value={user}>{user}</option>)}
+                </select>
               </div>
 
               {/* Category */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Category *</label>
-                <select name="category" value={formData.category} onChange={handleInputChange} style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box' }}>
+                <select name="category" value={formData.category} onChange={handleInputChange} style={selectStyle}>
                   <option value="">Select an option</option>
                   {categoryOptions.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                 </select>
@@ -236,7 +286,7 @@ Attachments: ${entry.data.attachments ? entry.data.attachments.length + ' file(s
               {/* Priority */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Priority *</label>
-                <select name="priority" value={formData.priority} onChange={handleInputChange} style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box' }}>
+                <select name="priority" value={formData.priority} onChange={handleInputChange} style={selectStyle}>
                   <option value="High">🔴 High</option>
                   <option value="Medium">🟡 Medium</option>
                   <option value="Low">🟢 Low</option>
@@ -246,7 +296,7 @@ Attachments: ${entry.data.attachments ? entry.data.attachments.length + ' file(s
               {/* Platform */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Which Platform *</label>
-                <select name="platform" value={formData.platform} onChange={handleInputChange} style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box' }}>
+                <select name="platform" value={formData.platform} onChange={handlePlatformChange} style={selectStyle}>
                   <option value="">Select an option</option>
                   {platformOptions.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
@@ -259,10 +309,10 @@ Attachments: ${entry.data.attachments ? entry.data.attachments.length + ' file(s
                 <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>Add website/page link where this bug/feature is happening or going to happen.</div>
               </div>
 
-              {/* Expected vs. Actual */}
+              {/* Expected vs. Actual - BIGGER HEIGHT */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Expected vs. Actual (optional)</label>
-                <textarea name="expectedVsActual" value={formData.expectedVsActual} onChange={handleInputChange} placeholder="What you were expecting and what is actually happening?" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box', fontFamily: 'inherit', minHeight: '80px', resize: 'vertical' }} />
+                <textarea name="expectedVsActual" value={formData.expectedVsActual} onChange={handleInputChange} placeholder="What you were expecting and what is actually happening?" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box', fontFamily: 'inherit', minHeight: '150px', resize: 'vertical' }} />
               </div>
 
               {/* Attachments */}
@@ -277,30 +327,27 @@ Attachments: ${entry.data.attachments ? entry.data.attachments.length + ' file(s
                 )}
               </div>
 
-              {/* Slack Channel */}
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Post to Slack Channel *</label>
-                <select value={selectedChannel} onChange={(e) => setSelectedChannel(e.target.value)} style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box' }}>
-                  {channelOptions.map(ch => <option key={ch} value={ch}>#{ch}</option>)}
-                </select>
-              </div>
-
               {/* Description */}
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Ticket Description *</label>
                 <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Add description about your ticket" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box', fontFamily: 'inherit', minHeight: '100px', resize: 'vertical' }} />
               </div>
 
+              {/* Auto Channel Info */}
+              <div style={{ backgroundColor: '#0f1419', padding: '12px', borderRadius: '6px', marginBottom: '20px', fontSize: '13px', color: '#888', border: '1px solid #333' }}>
+                📌 Ticket automatically posts to: <strong>#{selectedChannel}</strong>
+              </div>
+
               {/* Buttons */}
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => { setFormData({ user: '', category: '', otherExplain: '', priority: 'Medium', platform: '', whereHappening: '', expectedVsActual: '', attachments: [], description: '' }); }} style={{ padding: '10px 24px', backgroundColor: '#424242', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>Close</button>
+                <button type="button" onClick={() => { setFormData({ user: '', category: '', otherExplain: '', priority: 'Medium', platform: '', whereHappening: '', expectedVsActual: '', attachments: [], description: '' }); setSelectedChannel('flow-test'); }} style={{ padding: '10px 24px', backgroundColor: '#424242', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>Close</button>
                 <button type="submit" disabled={loading} style={{ padding: '10px 24px', backgroundColor: loading ? '#666' : '#4caf50', color: '#fff', border: 'none', borderRadius: '6px', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: '500' }}>{loading ? '⏳ Submitting...' : '✅ Submit'}</button>
               </div>
             </div>
           </form>
 
           <div style={{ marginTop: '20px', fontSize: '12px', color: '#666', textAlign: 'center' }}>
-            <p>Ticket will be posted to selected Slack channel</p>
+            <p>All tickets posted automatically to selected Slack channel</p>
           </div>
         </div>
       </div>
