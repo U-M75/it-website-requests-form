@@ -2,7 +2,7 @@
 
 Ek complete form app jo Slack ke saath integrate hai - users select kar sakte ho, form fill karo, aur directly Slack channel mein ticket post hota hai! 🚀
 
-## Features ✨
+## Features 
 
 - ✅ **Slack User Integration** - Automatic users list from Slack workspace
 - ✅ **Channel Selection** - Select karo kaunsi channel mein ticket post honi hai
