@@ -5,12 +5,16 @@ export default function Home() {
   const [formData, setFormData] = useState({
     user: '',
     category: '',
+    otherExplain: '',
     priority: 'Medium',
     platform: '',
     whereHappening: '',
+    expectedVsActual: '',
+    attachments: [],
     description: '',
   });
 
+  const [selectedChannel, setSelectedChannel] = useState('flow-test');
   const [loading, setLoading] = useState(false);
   const [conversationHistory, setConversationHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -31,12 +35,16 @@ export default function Home() {
     'Other'
   ];
 
-  // Automatic channel - flow-test
-  const CHANNEL = 'flow-test';
+  const channelOptions = ['flow-test', 'general', 'it-requests', 'bugs', 'features', 'other'];
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    setFormData(prev => ({ ...prev, attachments: files }));
   };
 
   const exportAsZip = async () => {
@@ -49,13 +57,16 @@ export default function Home() {
           return `[${idx + 1}] ${entry.timestamp}
 Channel: ${entry.channel}
 Status: ${entry.status}
-Data:
+---
 User: ${entry.data.user}
 Category: ${entry.data.category}
+${entry.data.otherExplain ? `Other Explanation: ${entry.data.otherExplain}` : ''}
 Priority: ${entry.data.priority}
 Platform: ${entry.data.platform}
-Location: ${entry.data.whereHappening}
+Where it's Happening: ${entry.data.whereHappening}
+Expected vs. Actual: ${entry.data.expectedVsActual}
 Description: ${entry.data.description}
+Attachments: ${entry.data.attachments ? entry.data.attachments.length + ' file(s)' : 'None'}
 ---`;
         })
         .join('\n\n');
@@ -65,7 +76,6 @@ Description: ${entry.data.description}
       zip.file('metadata.json', JSON.stringify({
         exportDate: new Date().toISOString(),
         totalSubmissions: conversationRef.current.length,
-        channel: CHANNEL,
       }, null, 2));
 
       const blob = await zip.generateAsync({ type: 'blob' });
@@ -85,7 +95,7 @@ Description: ${entry.data.description}
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.user || !formData.category || !formData.platform || !formData.whereHappening) {
+    if (!formData.user || !formData.category || !formData.platform || !formData.whereHappening || !selectedChannel) {
       alert('Please fill all required fields');
       return;
     }
@@ -96,31 +106,53 @@ Description: ${entry.data.description}
       const response = await fetch('/api/slack/post-message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ formData, channel: CHANNEL }),
+        body: JSON.stringify({ 
+          formData: {
+            user: formData.user,
+            category: formData.category,
+            otherExplain: formData.otherExplain,
+            priority: formData.priority,
+            platform: formData.platform,
+            whereHappening: formData.whereHappening,
+            expectedVsActual: formData.expectedVsActual,
+            description: formData.description,
+            attachmentCount: formData.attachments.length,
+          },
+          channel: selectedChannel 
+        }),
       });
 
       const result = await response.json();
 
       if (result.success) {
-        alert('✅ Ticket posted to flow-test!');
+        alert('✅ Ticket posted to #' + selectedChannel + '!');
         
         const timestamp = new Date().toISOString();
         const entry = {
           timestamp,
           data: formData,
-          channel: CHANNEL,
+          channel: selectedChannel,
           status: 'posted',
         };
 
         conversationRef.current.push(entry);
         setConversationHistory([...conversationRef.current]);
 
-        // Check if approaching token limit (rough estimate)
         if (conversationRef.current.length > 15) {
           setTokenWarning(true);
         }
 
-        setFormData({ user: '', category: '', priority: 'Medium', platform: '', whereHappening: '', description: '' });
+        setFormData({ 
+          user: '', 
+          category: '', 
+          otherExplain: '',
+          priority: 'Medium', 
+          platform: '', 
+          whereHappening: '', 
+          expectedVsActual: '',
+          attachments: [],
+          description: '' 
+        });
       } else {
         alert('❌ Failed: ' + (result.error || 'Unknown error'));
       }
@@ -168,7 +200,7 @@ Description: ${entry.data.description}
                 <div key={idx} style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid #333' }}>
                   <div style={{ fontSize: '12px', color: '#888' }}>#{idx + 1} - {entry.timestamp}</div>
                   <div style={{ fontSize: '13px', marginTop: '4px' }}>
-                    <strong>{entry.data.user}</strong> | {entry.data.category} | <span style={{ color: entry.status === 'posted' ? '#4caf50' : '#f44336' }}>{entry.status}</span>
+                    <strong>{entry.data.user}</strong> | {entry.data.category} | #{entry.channel} | <span style={{ color: entry.status === 'posted' ? '#4caf50' : '#f44336' }}>{entry.status}</span>
                   </div>
                 </div>
               ))}
@@ -193,6 +225,14 @@ Description: ${entry.data.description}
                 </select>
               </div>
 
+              {/* If Other, Explain */}
+              {formData.category === 'Other' && (
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>If Other, please explain (optional)</label>
+                  <input type="text" name="otherExplain" value={formData.otherExplain} onChange={handleInputChange} placeholder="Write something" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box' }} />
+                </div>
+              )}
+
               {/* Priority */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Priority *</label>
@@ -216,29 +256,51 @@ Description: ${entry.data.description}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Where it is Happening *</label>
                 <input type="text" name="whereHappening" value={formData.whereHappening} onChange={handleInputChange} placeholder="URL or page link" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box' }} />
+                <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>Add website/page link where this bug/feature is happening or going to happen.</div>
+              </div>
+
+              {/* Expected vs. Actual */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Expected vs. Actual (optional)</label>
+                <textarea name="expectedVsActual" value={formData.expectedVsActual} onChange={handleInputChange} placeholder="What you were expecting and what is actually happening?" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box', fontFamily: 'inherit', minHeight: '80px', resize: 'vertical' }} />
+              </div>
+
+              {/* Attachments */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Attachments</label>
+                <input type="file" multiple onChange={handleFileChange} style={{ display: 'block', marginBottom: '8px', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box', width: '100%' }} />
+                <div style={{ fontSize: '12px', color: '#888' }}>Add screenshots of the bugs, issues or new feature.</div>
+                {formData.attachments.length > 0 && (
+                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#4caf50' }}>
+                    ✅ {formData.attachments.length} file(s) selected
+                  </div>
+                )}
+              </div>
+
+              {/* Slack Channel */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Post to Slack Channel *</label>
+                <select value={selectedChannel} onChange={(e) => setSelectedChannel(e.target.value)} style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box' }}>
+                  {channelOptions.map(ch => <option key={ch} value={ch}>#{ch}</option>)}
+                </select>
               </div>
 
               {/* Description */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Description *</label>
-                <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Describe the issue..." style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box', fontFamily: 'inherit', minHeight: '100px', resize: 'vertical' }} />
-              </div>
-
-              {/* Channel Info */}
-              <div style={{ backgroundColor: '#0f1419', padding: '12px', borderRadius: '6px', marginBottom: '20px', fontSize: '13px', color: '#888' }}>
-                📌 All tickets automatically post to: <strong>#flow-test</strong>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Ticket Description *</label>
+                <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Add description about your ticket" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box', fontFamily: 'inherit', minHeight: '100px', resize: 'vertical' }} />
               </div>
 
               {/* Buttons */}
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => { setFormData({ user: '', category: '', priority: 'Medium', platform: '', whereHappening: '', description: '' }); }} style={{ padding: '10px 24px', backgroundColor: '#424242', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>Clear</button>
+                <button type="button" onClick={() => { setFormData({ user: '', category: '', otherExplain: '', priority: 'Medium', platform: '', whereHappening: '', expectedVsActual: '', attachments: [], description: '' }); }} style={{ padding: '10px 24px', backgroundColor: '#424242', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>Close</button>
                 <button type="submit" disabled={loading} style={{ padding: '10px 24px', backgroundColor: loading ? '#666' : '#4caf50', color: '#fff', border: 'none', borderRadius: '6px', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: '500' }}>{loading ? '⏳ Submitting...' : '✅ Submit'}</button>
               </div>
             </div>
           </form>
 
           <div style={{ marginTop: '20px', fontSize: '12px', color: '#666', textAlign: 'center' }}>
-            <p>Tickets posted to #flow-test channel</p>
+            <p>Ticket will be posted to selected Slack channel</p>
           </div>
         </div>
       </div>
