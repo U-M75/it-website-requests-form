@@ -10,23 +10,28 @@ export default async function handler(req, res) {
   }
 
   try {
-    const messageText = `🎫 *New IT/Website Request*
-*Submitter:* ${formData.user}
-*Category:* ${formData.category}
-${formData.otherExplain ? `*Other:* ${formData.otherExplain}` : ''}
-*Priority:* ${formData.priority}
-*Platform:* ${formData.platform}
+    const messageText = `🎫 *Submitted the Website Requests Form with Priority* 🔴 ${formData.priority}
 
-*Where it's Happening:*
+*Category* ${formData.category}
+${formData.otherExplain ? `If Other, please explain\n${formData.otherExplain}` : ''}
+
+*Priority*
+${formData.priority}
+
+*Website*
+${formData.platform}
+
+*Where it is Happening*
 ${formData.whereHappening}
 
-${formData.expectedVsActual ? `*Expected vs. Actual:*
-${formData.expectedVsActual}` : ''}
+${formData.expectedVsActual ? `*Expected vs. Actual*\n${formData.expectedVsActual}` : ''}
 
-*Description:*
+*Ticket Description*
 ${formData.description}
 
-${formData.attachmentCount ? `*Attachments:* ${formData.attachmentCount} file(s)` : ''}`;
+${formData.attachmentCount ? `*Files* 📎 ${formData.attachmentCount}` : ''}
+
+CC: <@${formData.userId}>`;
 
     const webhookUrl = process.env.SLACK_WEBHOOK_URL;
 
@@ -42,7 +47,6 @@ ${formData.attachmentCount ? `*Attachments:* ${formData.attachmentCount} file(s)
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         text: messageText,
-        channel: channel,
       }),
     });
 
