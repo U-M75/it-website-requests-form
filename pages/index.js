@@ -4,6 +4,7 @@ import Head from 'next/head';
 export default function Home() {
   const [formData, setFormData] = useState({
     user: '',
+    userId: '',
     category: '',
     otherExplain: '',
     priority: 'Medium',
@@ -21,15 +22,15 @@ export default function Home() {
   const [tokenWarning, setTokenWarning] = useState(false);
   const conversationRef = useRef([]);
 
-  // Slack users dropdown
+  // Slack users with display names and usernames
   const slackUsers = [
-    'umaima',
-    'john.doe',
-    'jane.smith',
-    'team-lead',
-    'alex.dev',
-    'sarah.admin',
-    'rohan.designer'
+    { name: 'Chloe - CS', username: 'chloe.cs', userId: 'U001' },
+    { name: 'Junaid K', username: 'junaid.k', userId: 'U002' },
+    { name: 'Alex IT-Geeks', username: 'alex.itgeeks', userId: 'U003' },
+    { name: 'Umaima', username: 'umaima', userId: 'U004' },
+    { name: 'John Doe', username: 'john.doe', userId: 'U005' },
+    { name: 'Jane Smith', username: 'jane.smith', userId: 'U006' },
+    { name: 'Team Lead', username: 'team.lead', userId: 'U007' },
   ];
 
   const categoryOptions = ['UI/Design Bug', 'Functionality Issue', 'Mobile Responsive', 'New Feature Request', 'Security/Access', 'Other'];
@@ -46,7 +47,6 @@ export default function Home() {
     'Other'
   ];
 
-  // Platform to Channel mapping
   const platformChannelMap = {
     'Retail - Kawaii Slime Company Web': 'flow-test',
     'Retail - Jellyland USA Web': 'flow-test',
@@ -64,10 +64,21 @@ export default function Home() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleUserChange = (e) => {
+    const username = e.target.value;
+    const user = slackUsers.find(u => u.username === username);
+    if (user) {
+      setFormData(prev => ({ 
+        ...prev, 
+        user: user.name,
+        userId: user.username 
+      }));
+    }
+  };
+
   const handlePlatformChange = (e) => {
     const platform = e.target.value;
     setFormData(prev => ({ ...prev, platform }));
-    // Auto-select channel based on platform
     setSelectedChannel(platformChannelMap[platform] || 'flow-test');
   };
 
@@ -87,15 +98,14 @@ export default function Home() {
 Channel: ${entry.channel}
 Status: ${entry.status}
 ---
-User: ${entry.data.user}
+User: ${entry.data.user} (@${entry.data.userId})
 Category: ${entry.data.category}
-${entry.data.otherExplain ? `Other Explanation: ${entry.data.otherExplain}` : ''}
+${entry.data.otherExplain ? `Other: ${entry.data.otherExplain}` : ''}
 Priority: ${entry.data.priority}
 Platform: ${entry.data.platform}
-Where it's Happening: ${entry.data.whereHappening}
-Expected vs. Actual: ${entry.data.expectedVsActual}
+Where: ${entry.data.whereHappening}
+Expected vs Actual: ${entry.data.expectedVsActual}
 Description: ${entry.data.description}
-Attachments: ${entry.data.attachments ? entry.data.attachments.length + ' file(s)' : 'None'}
 ---`;
         })
         .join('\n\n');
@@ -138,6 +148,7 @@ Attachments: ${entry.data.attachments ? entry.data.attachments.length + ' file(s
         body: JSON.stringify({ 
           formData: {
             user: formData.user,
+            userId: formData.userId,
             category: formData.category,
             otherExplain: formData.otherExplain,
             priority: formData.priority,
@@ -173,6 +184,7 @@ Attachments: ${entry.data.attachments ? entry.data.attachments.length + ' file(s
 
         setFormData({ 
           user: '', 
+          userId: '',
           category: '', 
           otherExplain: '',
           priority: 'Medium', 
@@ -257,12 +269,16 @@ Attachments: ${entry.data.attachments ? entry.data.attachments.length + ' file(s
           <form onSubmit={handleSubmit}>
             <div style={{ backgroundColor: '#1a1e27', border: '1px solid #333', borderRadius: '8px', padding: '24px' }}>
               
-              {/* Your Name - DROPDOWN */}
+              {/* Your Name - DROPDOWN with display names */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Your Name *</label>
-                <select name="user" value={formData.user} onChange={handleInputChange} style={selectStyle}>
+                <select value={formData.userId} onChange={handleUserChange} style={selectStyle}>
                   <option value="">Select a user</option>
-                  {slackUsers.map(user => <option key={user} value={user}>{user}</option>)}
+                  {slackUsers.map(user => (
+                    <option key={user.username} value={user.username}>
+                      {user.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -305,21 +321,26 @@ Attachments: ${entry.data.attachments ? entry.data.attachments.length + ' file(s
               {/* Where it is Happening */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Where it is Happening *</label>
-                <input type="text" name="whereHappening" value={formData.whereHappening} onChange={handleInputChange} placeholder="URL or page link" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box' }} />
-                <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>Add website/page link where this bug/feature is happening or going to happen.</div>
+                <input type="text" name="whereHappening" value={formData.whereHappening} onChange={handleInputChange} placeholder="Shopify" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box' }} />
               </div>
 
-              {/* Expected vs. Actual - BIGGER HEIGHT */}
+              {/* Expected vs. Actual */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Expected vs. Actual (optional)</label>
-                <textarea name="expectedVsActual" value={formData.expectedVsActual} onChange={handleInputChange} placeholder="What you were expecting and what is actually happening?" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box', fontFamily: 'inherit', minHeight: '150px', resize: 'vertical' }} />
+                <textarea name="expectedVsActual" value={formData.expectedVsActual} onChange={handleInputChange} placeholder="" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box', fontFamily: 'inherit', minHeight: '150px', resize: 'vertical' }} />
               </div>
 
               {/* Attachments */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Attachments</label>
-                <input type="file" multiple onChange={handleFileChange} style={{ display: 'block', marginBottom: '8px', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box', width: '100%' }} />
-                <div style={{ fontSize: '12px', color: '#888' }}>Add screenshots of the bugs, issues or new feature.</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px' }}>
+                  <span>📎</span>
+                  <label style={{ cursor: 'pointer', flex: 1 }}>
+                    <input type="file" multiple onChange={handleFileChange} style={{ display: 'none' }} />
+                    <span style={{ color: '#1e88e5' }}>Upload file</span>
+                  </label>
+                </div>
+                <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>Add screenshots of the bugs, issues or new feature.</div>
                 {formData.attachments.length > 0 && (
                   <div style={{ marginTop: '8px', fontSize: '12px', color: '#4caf50' }}>
                     ✅ {formData.attachments.length} file(s) selected
@@ -327,28 +348,26 @@ Attachments: ${entry.data.attachments ? entry.data.attachments.length + ' file(s
                 )}
               </div>
 
-              {/* Description */}
+              {/* Ticket Description */}
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Ticket Description *</label>
-                <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Add description about your ticket" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box', fontFamily: 'inherit', minHeight: '100px', resize: 'vertical' }} />
+                <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box', fontFamily: 'inherit', minHeight: '100px', resize: 'vertical' }} />
               </div>
 
-              {/* Auto Channel Info */}
-              <div style={{ backgroundColor: '#0f1419', padding: '12px', borderRadius: '6px', marginBottom: '20px', fontSize: '13px', color: '#888', border: '1px solid #333' }}>
-                📌 Ticket automatically posts to: <strong>#{selectedChannel}</strong>
-              </div>
+              {/* CC Section at Bottom */}
+              {formData.userId && (
+                <div style={{ backgroundColor: '#0f1419', padding: '12px', borderRadius: '6px', marginBottom: '20px', fontSize: '13px', border: '1px solid #333' }}>
+                  CC: <span style={{ color: '#1e88e5' }}>@{formData.userId}</span>
+                </div>
+              )}
 
               {/* Buttons */}
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => { setFormData({ user: '', category: '', otherExplain: '', priority: 'Medium', platform: '', whereHappening: '', expectedVsActual: '', attachments: [], description: '' }); setSelectedChannel('flow-test'); }} style={{ padding: '10px 24px', backgroundColor: '#424242', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>Close</button>
+                <button type="button" onClick={() => { setFormData({ user: '', userId: '', category: '', otherExplain: '', priority: 'Medium', platform: '', whereHappening: '', expectedVsActual: '', attachments: [], description: '' }); setSelectedChannel('flow-test'); }} style={{ padding: '10px 24px', backgroundColor: '#424242', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>Close</button>
                 <button type="submit" disabled={loading} style={{ padding: '10px 24px', backgroundColor: loading ? '#666' : '#4caf50', color: '#fff', border: 'none', borderRadius: '6px', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: '500' }}>{loading ? '⏳ Submitting...' : '✅ Submit'}</button>
               </div>
             </div>
           </form>
-
-          <div style={{ marginTop: '20px', fontSize: '12px', color: '#666', textAlign: 'center' }}>
-            <p>All tickets posted automatically to selected Slack channel</p>
-          </div>
         </div>
       </div>
     </>
