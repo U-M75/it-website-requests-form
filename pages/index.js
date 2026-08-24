@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
-
+ 
 export default function Home() {
   const [formData, setFormData] = useState({
     user: '',
@@ -14,20 +14,19 @@ export default function Home() {
     attachments: [],
     description: '',
   });
-
-  const [slackUsers] = useState([
-    { name: 'Chloe - CS', username: 'chloe.cs', userId: 'U001' },
-    { name: 'Junaid K', username: 'junaid.k', userId: 'U002' },
-    { name: 'Alex IT-Geeks', username: 'alex.itgeeks', userId: 'U003' },
-  ]);
-
+ 
+  // ✅ Real Slack users state
+  const [slackUsers, setSlackUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [usersError, setUsersError] = useState(null);
+ 
   const [selectedChannel, setSelectedChannel] = useState('flow-test');
   const [loading, setLoading] = useState(false);
   const [conversationHistory, setConversationHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
   const [tokenWarning, setTokenWarning] = useState(false);
   const conversationRef = useRef([]);
-
+ 
   const categoryOptions = ['UI/Design Bug', 'Functionality Issue', 'Mobile Responsive', 'New Feature Request', 'Security/Access', 'Other'];
   
   const platformOptions = [
@@ -41,7 +40,7 @@ export default function Home() {
     'Social Media',
     'Other'
   ];
-
+ 
   const platformChannelMap = {
     'Retail - Kawaii Slime Company Web': 'flow-test',
     'Retail - Jellyland USA Web': 'flow-test',
@@ -53,12 +52,44 @@ export default function Home() {
     'Social Media': 'flow-test',
     'Other': 'flow-test',
   };
-
+ 
+  // ✅ USEEFFECT - Real users fetch کریں جب component mount ہو
+  useEffect(() => {
+    const fetchSlackUsers = async () => {
+      try {
+        setUsersLoading(true);
+        setUsersError(null);
+        
+        const response = await fetch('/api/slack-users');
+        const data = await response.json();
+ 
+        if (data.success && data.users) {
+          setSlackUsers(data.users);
+          console.log(`✅ Loaded ${data.users.length} real users from Slack`);
+        } else {
+          throw new Error(data.error || 'Failed to fetch users');
+        }
+      } catch (error) {
+        console.error('❌ Error fetching Slack users:', error);
+        setUsersError(error.message);
+        
+        // Fallback: اگر API fail ہو تو fallback users دکھائیں
+        setSlackUsers([
+          { name: 'User Load Failed', username: 'error', userId: 'ERR001' },
+        ]);
+      } finally {
+        setUsersLoading(false);
+      }
+    };
+ 
+    fetchSlackUsers();
+  }, []); // Dependency array خالی - صرف mount پر چلے
+ 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
-
+ 
   const handleUserChange = (e) => {
     const username = e.target.value;
     const user = slackUsers.find(u => u.username === username);
@@ -70,113 +101,95 @@ export default function Home() {
       }));
     }
   };
-
+ 
   const handlePlatformChange = (e) => {
     const platform = e.target.value;
     setFormData(prev => ({ ...prev, platform }));
     setSelectedChannel(platformChannelMap[platform] || 'flow-test');
   };
-
+ 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     setFormData(prev => ({ ...prev, attachments: files }));
   };
-
+ 
   const exportAsZip = async () => {
     try {
       const JSZip = await import('jszip');
       const zip = new JSZip.default();
-
+ 
       const historyContent = conversationRef.current
         .map((entry, idx) => {
-          return `[${idx + 1}] ${entry.timestamp}
-Channel: ${entry.channel}
-Status: ${entry.status}
----
-User: ${entry.data.user} (${entry.data.userId})
-Category: ${entry.data.category}
-${entry.data.otherExplain ? `Other: ${entry.data.otherExplain}` : ''}
-Priority: ${entry.data.priority}
-Platform: ${entry.data.platform}
-Where: ${entry.data.whereHappening}
-Expected vs Actual: ${entry.data.expectedVsActual}
-Description: ${entry.data.description}
----`;
+          return `[${idx + 1}] ${entry.timestamp}\nChannel: ${entry.channel}\nStatus: ${entry.status}\n---\nUser: ${entry.data.user} (${entry.data.userId})\nCategory: ${entry.data.category}\n${entry.data.otherExplain ? `Other: ${entry.data.otherExplain}` : ''}\nPriority: ${entry.data.priority}\nPlatform: ${entry.data.platform}\n`;
         })
-        .join('\n\n');
-
+        .join('\n');
+ 
       zip.file('conversation_history.txt', historyContent);
-      zip.file('current_form_state.json', JSON.stringify(formData, null, 2));
-      zip.file('metadata.json', JSON.stringify({
-        exportDate: new Date().toISOString(),
-        totalSubmissions: conversationRef.current.length,
-      }, null, 2));
-
+ 
       const blob = await zip.generateAsync({ type: 'blob' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `IT-Form-${Date.now()}.zip`;
-      document.body.appendChild(a);
+      a.download = `form_export_${Date.now()}.zip`;
       a.click();
-      document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
-      alert('Error creating zip: ' + error.message);
+      alert('Error exporting: ' + error.message);
     }
   };
-
+ 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!formData.user || !formData.category || !formData.platform || !formData.whereHappening) {
-      alert('Please fill all required fields');
+ 
+    if (!formData.category || !formData.platform || !formData.whereHappening || !formData.description || !formData.userId) {
+      alert('❌ Please fill all required fields');
       return;
     }
-
+ 
     setLoading(true);
-
+ 
     try {
-      const response = await fetch('/api/slack/post-message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          formData: {
-            user: formData.user,
-            userId: formData.userId,
-            category: formData.category,
-            otherExplain: formData.otherExplain,
-            priority: formData.priority,
-            platform: formData.platform,
-            whereHappening: formData.whereHappening,
-            expectedVsActual: formData.expectedVsActual,
-            description: formData.description,
-            attachmentCount: formData.attachments.length,
-          },
-          channel: selectedChannel 
-        }),
+      const formDataToSend = new FormData();
+      formDataToSend.append('user', formData.user);
+      formDataToSend.append('userId', formData.userId);
+      formDataToSend.append('category', formData.category);
+      formDataToSend.append('otherExplain', formData.otherExplain);
+      formDataToSend.append('priority', formData.priority);
+      formDataToSend.append('platform', formData.platform);
+      formDataToSend.append('whereHappening', formData.whereHappening);
+      formDataToSend.append('expectedVsActual', formData.expectedVsActual);
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('channel', selectedChannel);
+ 
+      formData.attachments.forEach(file => {
+        formDataToSend.append('attachments', file);
       });
-
+ 
+      const response = await fetch('/api/submit-form', {
+        method: 'POST',
+        body: formDataToSend,
+      });
+ 
       const result = await response.json();
-
+ 
       if (result.success) {
-        alert('✅ Ticket posted to #' + selectedChannel + '!');
-        
-        const timestamp = new Date().toISOString();
+        alert('✅ Form submitted successfully to Slack!');
+ 
+        const timestamp = new Date().toLocaleString();
         const entry = {
           timestamp,
-          data: formData,
           channel: selectedChannel,
           status: 'posted',
+          data: formData,
         };
-
+ 
         conversationRef.current.push(entry);
         setConversationHistory([...conversationRef.current]);
-
+ 
         if (conversationRef.current.length > 15) {
           setTokenWarning(true);
         }
-
+ 
         setFormData({ 
           user: '', 
           userId: '',
@@ -199,7 +212,7 @@ Description: ${entry.data.description}
       setLoading(false);
     }
   };
-
+ 
   const selectStyle = {
     width: '100%',
     padding: '10px',
@@ -216,13 +229,13 @@ Description: ${entry.data.description}
     backgroundPosition: 'right 10px center',
     backgroundSize: '1.5em',
   };
-
+ 
   return (
     <>
       <Head>
         <title>IT/Website Requests Form</title>
       </Head>
-
+ 
       <div style={{ minHeight: '100vh', backgroundColor: '#0f1419', color: '#e0e0e0', padding: '20px', fontFamily: 'system-ui' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', flexWrap: 'wrap', gap: '12px' }}>
@@ -240,13 +253,26 @@ Description: ${entry.data.description}
               )}
             </div>
           </div>
-
+ 
+          {/* ✅ Loading/Error indicator */}
+          {usersLoading && (
+            <div style={{ backgroundColor: '#1e88e5', color: '#fff', padding: '12px', borderRadius: '6px', marginBottom: '20px' }}>
+              ⏳ Loading Slack users...
+            </div>
+          )}
+ 
+          {usersError && (
+            <div style={{ backgroundColor: '#f44336', color: '#fff', padding: '12px', borderRadius: '6px', marginBottom: '20px' }}>
+              ⚠️ Error loading users: {usersError}
+            </div>
+          )}
+ 
           {tokenWarning && (
             <div style={{ backgroundColor: '#d32f2f', color: '#fff', padding: '12px', borderRadius: '6px', marginBottom: '20px' }}>
               ⚠️ Approaching token limit! Consider exporting conversation as ZIP.
             </div>
           )}
-
+ 
           {showHistory && (
             <div style={{ backgroundColor: '#1a1e27', border: '1px solid #333', borderRadius: '8px', padding: '16px', marginBottom: '24px', maxHeight: '300px', overflowY: 'auto' }}>
               <h3 style={{ marginTop: 0 }}>📝 Conversation History</h3>
@@ -260,15 +286,24 @@ Description: ${entry.data.description}
               ))}
             </div>
           )}
-
+ 
           <form onSubmit={handleSubmit}>
             <div style={{ backgroundColor: '#1a1e27', border: '1px solid #333', borderRadius: '8px', padding: '24px' }}>
               
-              {/* Your Name - DROPDOWN */}
+              {/* Your Name - DROPDOWN with real users */}
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Your Name *</label>
-                <select value={formData.userId} onChange={handleUserChange} style={selectStyle}>
-                  <option value="">Select a user</option>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+                  Your Name * {usersLoading && '(Loading...)'}
+                </label>
+                <select 
+                  value={formData.userId} 
+                  onChange={handleUserChange} 
+                  disabled={usersLoading || slackUsers.length === 0}
+                  style={{...selectStyle, opacity: usersLoading ? 0.6 : 1}}
+                >
+                  <option value="">
+                    {usersLoading ? 'Loading users...' : 'Select a user'}
+                  </option>
                   {slackUsers.map(user => (
                     <option key={user.username} value={user.username}>
                       {user.name}
@@ -276,7 +311,7 @@ Description: ${entry.data.description}
                   ))}
                 </select>
               </div>
-
+ 
               {/* Category */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Category *</label>
@@ -285,7 +320,7 @@ Description: ${entry.data.description}
                   {categoryOptions.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                 </select>
               </div>
-
+ 
               {/* If Other, Explain */}
               {formData.category === 'Other' && (
                 <div style={{ marginBottom: '16px' }}>
@@ -293,7 +328,7 @@ Description: ${entry.data.description}
                   <input type="text" name="otherExplain" value={formData.otherExplain} onChange={handleInputChange} placeholder="Write something" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box' }} />
                 </div>
               )}
-
+ 
               {/* Priority */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Priority *</label>
@@ -303,7 +338,7 @@ Description: ${entry.data.description}
                   <option value="Low">🟢 Low</option>
                 </select>
               </div>
-
+ 
               {/* Platform */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Which Platform *</label>
@@ -312,19 +347,19 @@ Description: ${entry.data.description}
                   {platformOptions.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
-
+ 
               {/* Where it is Happening */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Where it is Happening *</label>
                 <input type="text" name="whereHappening" value={formData.whereHappening} onChange={handleInputChange} placeholder="Shopify" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box' }} />
               </div>
-
+ 
               {/* Expected vs. Actual */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Expected vs. Actual (optional)</label>
                 <textarea name="expectedVsActual" value={formData.expectedVsActual} onChange={handleInputChange} placeholder="" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box', fontFamily: 'inherit', minHeight: '150px', resize: 'vertical' }} />
               </div>
-
+ 
               {/* Attachments */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Attachments</label>
@@ -342,24 +377,24 @@ Description: ${entry.data.description}
                   </div>
                 )}
               </div>
-
+ 
               {/* Ticket Description */}
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Ticket Description *</label>
                 <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box', fontFamily: 'inherit', minHeight: '100px', resize: 'vertical' }} />
               </div>
-
+ 
               {/* CC Section at Bottom */}
               {formData.userId && (
                 <div style={{ backgroundColor: '#0f1419', padding: '12px', borderRadius: '6px', marginBottom: '20px', fontSize: '13px', border: '1px solid #333' }}>
                   CC: <span style={{ color: '#1e88e5' }}>{formData.userId}</span>
                 </div>
               )}
-
+ 
               {/* Buttons */}
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                 <button type="button" onClick={() => { setFormData({ user: '', userId: '', category: '', otherExplain: '', priority: 'Medium', platform: '', whereHappening: '', expectedVsActual: '', attachments: [], description: '' }); setSelectedChannel('flow-test'); }} style={{ padding: '10px 24px', backgroundColor: '#424242', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>Close</button>
-                <button type="submit" disabled={loading} style={{ padding: '10px 24px', backgroundColor: loading ? '#666' : '#4caf50', color: '#fff', border: 'none', borderRadius: '6px', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: '500' }}>{loading ? '⏳ Submitting...' : '✅ Submit'}</button>
+                <button type="submit" disabled={loading || usersLoading} style={{ padding: '10px 24px', backgroundColor: loading || usersLoading ? '#666' : '#4caf50', color: '#fff', border: 'none', borderRadius: '6px', cursor: loading || usersLoading ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: '500' }}>{loading ? '⏳ Submitting...' : '✅ Submit'}</button>
               </div>
             </div>
           </form>
@@ -368,3 +403,4 @@ Description: ${entry.data.description}
     </>
   );
 }
+ 
