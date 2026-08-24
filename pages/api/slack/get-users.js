@@ -1,49 +1,67 @@
+// pages/api/slack-users.js
 export default async function handler(req, res) {
+  // صرف GET request allow کریں
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+ 
   try {
-    const token = process.env.SLACK_BOT_TOKEN;
-
-    console.log('Token:', token ? 'exists' : 'missing');
-
-    if (!token) {
+    const botToken = process.env.SLACK_BOT_TOKEN;
+    
+    // Environment variable check کریں
+    if (!botToken) {
+      console.error('❌ SLACK_BOT_TOKEN not found in environment variables');
       return res.status(500).json({ 
-        error: 'SLACK_BOT_TOKEN not configured',
-        users: []
+        error: 'Slack Bot Token not configured',
+        success: false 
       });
     }
-
+ 
+    // Slack API سے users list fetch کریں
     const response = await fetch('https://slack.com/api/users.list', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${botToken}`,
         'Content-Type': 'application/json',
       },
     });
-
+ 
     const data = await response.json();
-
-    console.log('Slack response:', data);
-
+ 
+    // اگر Slack API fail ہو
     if (!data.ok) {
-      return res.status(200).json({ 
-        error: data.error,
-        users: []
+      console.error('Slack API Error:', data.error);
+      return res.status(400).json({ 
+        error: data.error || 'Failed to fetch users from Slack',
+        success: false 
       });
     }
-
-    const users = data.members
-      .filter(user => !user.is_bot && !user.deleted)
+ 
+    // صرف active users اور bots نہیں
+    const activeUsers = data.members
+      .filter(user => !user.deleted && user.real_name) // Real users only
       .map(user => ({
         name: user.real_name || user.name,
         username: user.name,
         userId: user.id,
-      }));
-
-    return res.status(200).json({ users });
+        email: user.profile?.email || '',
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name)); // الفبائی ترتیب میں
+ 
+    console.log(`✅ Fetched ${activeUsers.length} users from Slack`);
+ 
+    return res.status(200).json({
+      success: true,
+      users: activeUsers,
+      count: activeUsers.length,
+    });
+ 
   } catch (error) {
-    console.error('Error:', error);
-    return res.status(200).json({ 
-      error: error.message,
-      users: []
+    console.error('API Error:', error.message);
+    return res.status(500).json({ 
+      error: error.message || 'Internal server error',
+      success: false 
     });
   }
 }
+ 
