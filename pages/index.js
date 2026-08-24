@@ -60,8 +60,15 @@ export default function Home() {
         setUsersLoading(true);
         setUsersError(null);
         
-        const response = await fetch('/api/slack-users');
-        const data = await response.json();
+        const response = await fetch('/api/slack/get-users');
+        const contentType = response.headers.get('content-type') || '';
+        const data = contentType.includes('application/json')
+          ? await response.json()
+          : { success: false, error: `Server returned ${response.status} instead of JSON` };
+
+        if (!response.ok && !data.error) {
+          throw new Error(`Slack users request failed (${response.status})`);
+        }
  
         if (data.success && data.users) {
           setSlackUsers(data.users);
@@ -73,10 +80,8 @@ export default function Home() {
         console.error('❌ Error fetching Slack users:', error);
         setUsersError(error.message);
         
-        // Fallback: اگر API fail ہو تو fallback users دکھائیں
-        setSlackUsers([
-          { name: 'User Load Failed', username: 'error', userId: 'ERR001' },
-        ]);
+        // Never show fake users when Slack is unavailable.
+        setSlackUsers([]);
       } finally {
         setUsersLoading(false);
       }
@@ -91,13 +96,13 @@ export default function Home() {
   };
  
   const handleUserChange = (e) => {
-    const username = e.target.value;
-    const user = slackUsers.find(u => u.username === username);
+    const userId = e.target.value;
+    const user = slackUsers.find(u => u.userId === userId);
     if (user) {
       setFormData(prev => ({ 
         ...prev, 
         user: user.name,
-        userId: user.username 
+        userId: user.userId
       }));
     }
   };
@@ -149,28 +154,32 @@ export default function Home() {
     setLoading(true);
  
     try {
-      const formDataToSend = new FormData();
-      formDataToSend.append('user', formData.user);
-      formDataToSend.append('userId', formData.userId);
-      formDataToSend.append('category', formData.category);
-      formDataToSend.append('otherExplain', formData.otherExplain);
-      formDataToSend.append('priority', formData.priority);
-      formDataToSend.append('platform', formData.platform);
-      formDataToSend.append('whereHappening', formData.whereHappening);
-      formDataToSend.append('expectedVsActual', formData.expectedVsActual);
-      formDataToSend.append('description', formData.description);
-      formDataToSend.append('channel', selectedChannel);
- 
-      formData.attachments.forEach(file => {
-        formDataToSend.append('attachments', file);
-      });
- 
-      const response = await fetch('/api/submit-form', {
+      // The API route expects JSON (attachments are currently sent as a count).
+      // Do not send Slack tokens from the browser; the API route keeps those secret.
+      const response = await fetch('/api/slack/post-message', {
         method: 'POST',
-        body: formDataToSend,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          formData: {
+            user: formData.user,
+            userId: formData.userId,
+            category: formData.category,
+            otherExplain: formData.otherExplain,
+            priority: formData.priority,
+            platform: formData.platform,
+            whereHappening: formData.whereHappening,
+            expectedVsActual: formData.expectedVsActual,
+            description: formData.description,
+            attachmentCount: formData.attachments.length,
+          },
+          channel: selectedChannel,
+        }),
       });
- 
-      const result = await response.json();
+
+      const contentType = response.headers.get('content-type') || '';
+      const result = contentType.includes('application/json')
+        ? await response.json()
+        : { success: false, error: `Server returned ${response.status} instead of JSON` };
  
       if (result.success) {
         alert('✅ Form submitted successfully to Slack!');
@@ -302,10 +311,10 @@ export default function Home() {
                   style={{...selectStyle, opacity: usersLoading ? 0.6 : 1}}
                 >
                   <option value="">
-                    {usersLoading ? 'Loading users...' : 'Select a user'}
+                    {usersLoading ? 'Loading users...' : usersError ? 'Users unavailable' : 'Select a user'}
                   </option>
                   {slackUsers.map(user => (
-                    <option key={user.username} value={user.username}>
+                    <option key={user.userId} value={user.userId}>
                       {user.name}
                     </option>
                   ))}
