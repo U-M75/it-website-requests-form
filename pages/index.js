@@ -15,6 +15,7 @@ export default function Home() {
     description: '',
   });
 
+  const [slackUsers, setSlackUsers] = useState([]);
   const [selectedChannel, setSelectedChannel] = useState('flow-test');
   const [loading, setLoading] = useState(false);
   const [conversationHistory, setConversationHistory] = useState([]);
@@ -22,16 +23,22 @@ export default function Home() {
   const [tokenWarning, setTokenWarning] = useState(false);
   const conversationRef = useRef([]);
 
-  // Slack users with display names and usernames
-  const slackUsers = [
-    { name: 'Chloe - CS', username: 'chloe.cs', userId: 'U001' },
-    { name: 'Junaid K', username: 'junaid.k', userId: 'U002' },
-    { name: 'Alex IT-Geeks', username: 'alex.itgeeks', userId: 'U003' },
-    { name: 'Umaima', username: 'umaima', userId: 'U004' },
-    { name: 'John Doe', username: 'john.doe', userId: 'U005' },
-    { name: 'Jane Smith', username: 'jane.smith', userId: 'U006' },
-    { name: 'Team Lead', username: 'team.lead', userId: 'U007' },
-  ];
+  // Fetch Slack users on mount
+  useEffect(() => {
+    fetchSlackUsers();
+  }, []);
+
+  const fetchSlackUsers = async () => {
+    try {
+      const response = await fetch('/api/slack/get-users');
+      const data = await response.json();
+      if (data.users) {
+        setSlackUsers(data.users);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
 
   const categoryOptions = ['UI/Design Bug', 'Functionality Issue', 'Mobile Responsive', 'New Feature Request', 'Security/Access', 'Other'];
   
@@ -98,7 +105,7 @@ export default function Home() {
 Channel: ${entry.channel}
 Status: ${entry.status}
 ---
-User: ${entry.data.user} (@${entry.data.userId})
+User: ${entry.data.user} (${entry.data.userId})
 Category: ${entry.data.category}
 ${entry.data.otherExplain ? `Other: ${entry.data.otherExplain}` : ''}
 Priority: ${entry.data.priority}
@@ -269,7 +276,7 @@ Description: ${entry.data.description}
           <form onSubmit={handleSubmit}>
             <div style={{ backgroundColor: '#1a1e27', border: '1px solid #333', borderRadius: '8px', padding: '24px' }}>
               
-              {/* Your Name - DROPDOWN with display names */}
+              {/* Your Name - DROPDOWN with Slack users */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Your Name *</label>
                 <select value={formData.userId} onChange={handleUserChange} style={selectStyle}>
@@ -357,7 +364,7 @@ Description: ${entry.data.description}
               {/* CC Section at Bottom */}
               {formData.userId && (
                 <div style={{ backgroundColor: '#0f1419', padding: '12px', borderRadius: '6px', marginBottom: '20px', fontSize: '13px', border: '1px solid #333' }}>
-                  CC: <span style={{ color: '#1e88e5' }}>@{formData.userId}</span>
+                  CC: <span style={{ color: '#1e88e5' }}>{formData.userId}</span>
                 </div>
               )}
 
