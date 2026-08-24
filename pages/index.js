@@ -15,30 +15,18 @@ export default function Home() {
     description: '',
   });
 
-  const [slackUsers, setSlackUsers] = useState([]);
+  const [slackUsers] = useState([
+    { name: 'Chloe - CS', username: 'chloe.cs', userId: 'U001' },
+    { name: 'Junaid K', username: 'junaid.k', userId: 'U002' },
+    { name: 'Alex IT-Geeks', username: 'alex.itgeeks', userId: 'U003' },
+  ]);
+
   const [selectedChannel, setSelectedChannel] = useState('flow-test');
   const [loading, setLoading] = useState(false);
   const [conversationHistory, setConversationHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
   const [tokenWarning, setTokenWarning] = useState(false);
   const conversationRef = useRef([]);
-
-  // Fetch Slack users on mount
-  useEffect(() => {
-    fetchSlackUsers();
-  }, []);
-
-  const fetchSlackUsers = async () => {
-    try {
-      const response = await fetch('/api/slack/get-users');
-      const data = await response.json();
-      if (data.users) {
-        setSlackUsers(data.users);
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    }
-  };
 
   const categoryOptions = ['UI/Design Bug', 'Functionality Issue', 'Mobile Responsive', 'New Feature Request', 'Security/Access', 'Other'];
   
@@ -276,7 +264,7 @@ Description: ${entry.data.description}
           <form onSubmit={handleSubmit}>
             <div style={{ backgroundColor: '#1a1e27', border: '1px solid #333', borderRadius: '8px', padding: '24px' }}>
               
-              {/* Your Name - DROPDOWN with Slack users */}
+              {/* Your Name - DROPDOWN */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Your Name *</label>
                 <select value={formData.userId} onChange={handleUserChange} style={selectStyle}>
