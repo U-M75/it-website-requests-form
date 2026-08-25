@@ -189,7 +189,7 @@ export default async function handler(req, res) {
     ? `\n\n*If Other, please explain*\n${formData.otherExplain}`
     : '';
   // Keep the Slack message layout consistent with the requested design.
-  const messageText = `🎫 *Submitted the Website Requests Form with Priority* ${priorityEmoji} ${formData.priority}
+  const messageText = `*Submitted the Website Requests Form with Priority* ${priorityEmoji} ${formData.priority}
 
 *Category* ${formData.category}${otherLine}
 
