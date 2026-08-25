@@ -178,16 +178,27 @@ export default async function handler(req, res) {
   const botToken = process.env.SLACK_BOT_TOKEN?.trim();
   const ccIds = [...new Set([formData.userId, ...formData.ccUserIds].filter(Boolean))];
   const ccLine = ccIds.length
-    ? `\nCC: ${ccIds.map(userId => `<@${userId}>`).join(' ')}`
+    ? `CC: ${ccIds.map(userId => `<@${userId}>`).join(' ')}`
+    : '';
+  const priorityEmoji = {
+    High: '🔴',
+    Medium: '🟡',
+    Low: '🟢',
+  }[formData.priority] || '🟡';
+  const otherLine = formData.category === 'Other' && formData.otherExplain
+    ? `\n\n*If Other, please explain*\n${formData.otherExplain}`
+    : '';
+  const filesLine = attachments.length
+    ? `\n\n*Files* 📎 ${attachments.length}`
     : '';
 
-  const messageText = `🎫 *Submitted the Website Requests Form with Priority* ${formData.priority}
+  // Keep the Slack message layout consistent with the requested design.
+  const messageText = `🎫 *Submitted the Website Requests Form with Priority* ${priorityEmoji} ${formData.priority}
 
-*Category* ${formData.category}
-${formData.otherExplain ? `If Other, please explain\n${formData.otherExplain}` : ''}
+*Category* ${formData.category}${otherLine}
 
 *Priority*
-${formData.priority}
+${priorityEmoji} ${formData.priority}
 
 *Website*
 ${formData.platform}
@@ -195,12 +206,8 @@ ${formData.platform}
 *Where it is Happening*
 ${formData.whereHappening}
 
-${formData.expectedVsActual ? `*Expected vs. Actual*\n${formData.expectedVsActual}` : ''}
-
-*Ticket Description*
-${formData.description}
-
-${attachments.length ? `*Files* 📎 ${attachments.length}` : ''}${ccLine}`;
+${formData.expectedVsActual ? `*Expected vs. Actual*\n${formData.expectedVsActual}\n\n` : ''}*Ticket Description*
+${formData.description}${filesLine}${ccLine ? `\n\n${ccLine}` : ''}`;
 
   try {
     if (attachments.length > 0) {
