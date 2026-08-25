@@ -29,6 +29,8 @@ The bot token must have these scopes:
 text
 
 users:read
+channels:read
+groups:read
 files:write
 chat:write
 The bot must be invited to every channel that receives messages or file attachments.
