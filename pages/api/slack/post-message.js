@@ -188,10 +188,6 @@ export default async function handler(req, res) {
   const otherLine = formData.category === 'Other' && formData.otherExplain
     ? `\n\n*If Other, please explain*\n${formData.otherExplain}`
     : '';
-  const filesLine = attachments.length
-    ? `\n\n*Files* 📎 ${attachments.length}`
-    : '';
-
   // Keep the Slack message layout consistent with the requested design.
   const messageText = `🎫 *Submitted the Website Requests Form with Priority* ${priorityEmoji} ${formData.priority}
 
@@ -207,7 +203,7 @@ ${formData.platform}
 ${formData.whereHappening}
 
 ${formData.expectedVsActual ? `*Expected vs. Actual*\n${formData.expectedVsActual}\n\n` : ''}*Ticket Description*
-${formData.description}${filesLine}${ccLine ? `\n\n${ccLine}` : ''}`;
+${formData.description}${ccLine ? `\n\n${ccLine}` : ''}`;
 
   try {
     if (attachments.length > 0) {
