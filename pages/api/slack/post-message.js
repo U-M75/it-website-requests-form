@@ -46,22 +46,26 @@ async function getSlackUploadDetails(file, botToken) {
   const filename = file.originalFilename || 'attachment';
   const bytes = await fs.readFile(file.filepath);
 
+  // Slack expects these two parameters as form-encoded values here.
+  // Sending JSON can result in invalid_arguments/missing required fields.
+  const uploadRequest = new URLSearchParams();
+  uploadRequest.set('filename', filename);
+  uploadRequest.set('length', String(bytes.length));
+
   const urlResponse = await fetch('https://slack.com/api/files.getUploadURLExternal', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${botToken}`,
-      'Content-Type': 'application/json; charset=utf-8',
+      'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
     },
-    body: JSON.stringify({
-      filename,
-      length: bytes.length,
-    }),
+    body: uploadRequest.toString(),
   });
 
   const urlData = await urlResponse.json();
 
   if (!urlResponse.ok || !urlData.ok) {
-    throw new Error(`Unable to prepare ${filename}: ${urlData.error || urlResponse.statusText}`);
+    const details = urlData.response_metadata?.messages?.join('; ');
+    throw new Error(`Unable to prepare ${filename}: ${details || urlData.error || urlResponse.statusText}`);
   }
 
   const uploadResponse = await fetch(urlData.upload_url, {
