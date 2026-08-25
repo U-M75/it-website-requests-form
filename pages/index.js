@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
+import { DEFAULT_CHANNEL, getPlatformChannel } from '../lib/slack-channels';
  
 export default function Home() {
   const [formData, setFormData] = useState({
     user: '',
     userId: '',
+    ccUserIds: [],
     category: '',
     otherExplain: '',
     priority: 'Medium',
@@ -20,7 +22,7 @@ export default function Home() {
   const [usersLoading, setUsersLoading] = useState(true);
   const [usersError, setUsersError] = useState(null);
  
-  const [selectedChannel, setSelectedChannel] = useState('flow-test');
+  const [selectedChannel, setSelectedChannel] = useState(DEFAULT_CHANNEL.name);
   const [loading, setLoading] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(null);
   const [conversationHistory, setConversationHistory] = useState([]);
@@ -42,19 +44,6 @@ export default function Home() {
     'Other'
   ];
  
-  // Display names for the channels. The API uses the corresponding Slack IDs.
-  // Platforms without a mapping remain on the current flow-test webhook for now.
-  const platformChannelMap = {
-    'Retail - Kawaii Slime Company Web': 'dev-itgeeks-ksc',
-    'Retail - Jellyland USA Web': 'dev-itgeeks-jellyland',
-    'B2B - The Kawaii Company': 'dev-itgeeks-tkc',
-    'Disney POS': 'jk-tickets-slack-pos',
-    'Slack': 'flow-test',
-    'Microsoft Sharepoint': 'flow-test',
-    'Zendesk': 'flow-test',
-    'Social Media': 'flow-test',
-    'Other': 'flow-test',
-  };
  
   // ✅ USEEFFECT - Real users fetch کریں جب component mount ہو
   useEffect(() => {
@@ -110,10 +99,15 @@ export default function Home() {
     }
   };
  
+  const handleCcChange = (e) => {
+    const ccUserIds = e.target.value ? [e.target.value] : [];
+    setFormData(prev => ({ ...prev, ccUserIds }));
+  };
+
   const handlePlatformChange = (e) => {
     const platform = e.target.value;
     setFormData(prev => ({ ...prev, platform }));
-    setSelectedChannel(platformChannelMap[platform] || 'flow-test');
+    setSelectedChannel(getPlatformChannel(platform).name);
   };
  
   const handleFileChange = (e) => {
@@ -157,26 +151,25 @@ export default function Home() {
     setLoading(true);
  
     try {
-      // The API route expects JSON (attachments are currently sent as a count).
-      // Do not send Slack tokens from the browser; the API route keeps those secret.
+      // Send the real files to the server. The server uploads them to Slack
+      // without exposing the Slack token in the browser.
+      const requestData = new FormData();
+      requestData.append('user', formData.user);
+      requestData.append('userId', formData.userId);
+      requestData.append('category', formData.category);
+      requestData.append('otherExplain', formData.otherExplain);
+      requestData.append('priority', formData.priority);
+      requestData.append('platform', formData.platform);
+      requestData.append('whereHappening', formData.whereHappening);
+      requestData.append('expectedVsActual', formData.expectedVsActual);
+      requestData.append('description', formData.description);
+      requestData.append('channel', selectedChannel);
+      formData.ccUserIds.forEach(userId => requestData.append('ccUserIds', userId));
+      formData.attachments.forEach(file => requestData.append('attachments', file));
+
       const response = await fetch('/api/slack/post-message', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          formData: {
-            user: formData.user,
-            userId: formData.userId,
-            category: formData.category,
-            otherExplain: formData.otherExplain,
-            priority: formData.priority,
-            platform: formData.platform,
-            whereHappening: formData.whereHappening,
-            expectedVsActual: formData.expectedVsActual,
-            description: formData.description,
-            attachmentCount: formData.attachments.length,
-          },
-          channel: selectedChannel,
-        }),
+        body: requestData,
       });
 
       const contentType = response.headers.get('content-type') || '';
@@ -208,6 +201,7 @@ export default function Home() {
         setFormData({ 
           user: '', 
           userId: '',
+          ccUserIds: [],
           category: '', 
           otherExplain: '',
           priority: 'Medium', 
@@ -217,7 +211,7 @@ export default function Home() {
           attachments: [],
           description: '' 
         });
-        setSelectedChannel('flow-test');
+        setSelectedChannel(DEFAULT_CHANNEL.name);
       } else {
         alert('❌ Failed: ' + (result.error || 'Unknown error'));
       }
@@ -244,6 +238,8 @@ export default function Home() {
     backgroundPosition: 'right 10px center',
     backgroundSize: '1.5em',
   };
+
+  const selectedCcUsers = slackUsers.filter(user => formData.ccUserIds.includes(user.userId));
  
   return (
     <>
@@ -336,6 +332,29 @@ export default function Home() {
                   ))}
                 </select>
               </div>
+
+              {/* CC users */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+                  CC (optional)
+                </label>
+                <select
+                  value={formData.ccUserIds[0] || ''}
+                  onChange={handleCcChange}
+                  disabled={usersLoading || slackUsers.length === 0}
+                  style={{...selectStyle, opacity: usersLoading ? 0.6 : 1}}
+                >
+                  <option value="">No CC user</option>
+                  {slackUsers.map(user => (
+                    <option key={user.userId} value={user.userId}>
+                      {user.name}
+                    </option>
+                  ))}
+                </select>
+                <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+                  Optional: jis user ko CC karna ho select karein.
+                </div>
+              </div>
  
               {/* Category */}
               <div style={{ marginBottom: '16px' }}>
@@ -412,16 +431,17 @@ export default function Home() {
                 <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box', fontFamily: 'inherit', minHeight: '100px', resize: 'vertical' }} />
               </div>
  
-              {/* CC Section at Bottom */}
-              {formData.userId && (
-                <div style={{ backgroundColor: '#0f1419', padding: '12px', borderRadius: '6px', marginBottom: '20px', fontSize: '13px', border: '1px solid #333' }}>
-                  CC: <span style={{ color: '#1e88e5' }}>{formData.userId}</span>
-                </div>
-              )}
+              {/* CC preview */}
+              <div style={{ backgroundColor: '#0f1419', padding: '12px', borderRadius: '6px', marginBottom: '20px', fontSize: '13px', border: '1px solid #333' }}>
+                <strong>CC:</strong>{' '}
+                {selectedCcUsers.length > 0
+                  ? selectedCcUsers.map(user => user.name).join(', ')
+                  : 'No additional users selected'}
+              </div>
  
               {/* Buttons */}
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => { setFormData({ user: '', userId: '', category: '', otherExplain: '', priority: 'Medium', platform: '', whereHappening: '', expectedVsActual: '', attachments: [], description: '' }); setSelectedChannel('flow-test'); }} style={{ padding: '10px 24px', backgroundColor: '#424242', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>Close</button>
+                <button type="button" onClick={() => { setFormData({ user: '', userId: '', ccUserIds: [], category: '', otherExplain: '', priority: 'Medium', platform: '', whereHappening: '', expectedVsActual: '', attachments: [], description: '' }); setSelectedChannel(DEFAULT_CHANNEL.name); }} style={{ padding: '10px 24px', backgroundColor: '#424242', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>Close</button>
                 <button type="submit" disabled={loading || usersLoading} style={{ padding: '10px 24px', backgroundColor: loading || usersLoading ? '#666' : '#4caf50', color: '#fff', border: 'none', borderRadius: '6px', cursor: loading || usersLoading ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: '500' }}>{loading ? '⏳ Submitting...' : '✅ Submit'}</button>
               </div>
             </div>
