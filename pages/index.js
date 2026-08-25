@@ -391,9 +391,11 @@ export default function Home() {
                   <option value="">Select an option</option>
                   {platformOptions.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
-                <div style={{ marginTop: '8px', color: '#8ab4f8', fontSize: '13px' }}>
-                  📤 This ticket will be sent to: <strong>#{selectedChannel}</strong>
-                </div>
+                {formData.platform && (
+                  <div style={{ marginTop: '8px', color: '#8ab4f8', fontSize: '13px' }}>
+                    📤 This ticket will be sent to: <strong>#{selectedChannel}</strong>
+                  </div>
+                )}
               </div>
  
               {/* Where it is Happening */}
