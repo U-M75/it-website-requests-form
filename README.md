@@ -1,25 +1,34 @@
-# 📋 IT/Website Requests Form with Slack Integration
+KSC Tickets with Slack Integration
+A complete request form integrated with Slack. Users can select their Slack profile, submit a ticket, and send it directly to the configured Slack channel.
 
-Ek complete form app jo Slack ke saath integrate hai - users select kar sakte ho, form fill karo, aur directly Slack channel mein ticket post hota hai! 🚀
+Features
+✅ Slack User Integration - Load active users from the Slack workspace
+✅ CC User Selection - Select an optional user to mention in the ticket
+✅ Channel Selection - Route tickets to a channel based on the selected platform
+✅ Smart Form Fields - Category, priority, platform, and location details
+✅ File Attachments - Upload screenshots and files directly to Slack
+✅ Thank-you Screen - Replace the form with a confirmation screen after submission
+✅ Conversation History - Track submissions during the current session
+✅ Vercel Ready - Deploy directly to Vercel
+✅ Dark Theme - Modern, eye-friendly UI
+Quick Start
+Clone the repository.
+Run npm install.
+Create .env.local with the required Slack variables.
+Run npm run dev.
+Open http://localhost:3000.
+Deploy to Vercel.
+Environment Variables
+text
 
-## Features 
+SLACK_BOT_TOKEN=xoxb-your-bot-token
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/your-webhook
+SLACK_DEFAULT_CHANNEL_ID=Cxxxxxxxxxx
+The bot token must have these scopes:
 
-- ✅ **Slack User Integration** - Automatic users list from Slack workspace
-- ✅ **Channel Selection** - Select karo kaunsi channel mein ticket post honi hai
-- ✅ **Smart Form Fields** - Category, Priority, Platform, Location details
-- ✅ **Slack Posting** - Formatted messages directly to channels
-- ✅ **Conversation History** - Track all submissions with timestamps
-- ✅ **Zip Export** - Download conversation history jab context limit khatm ho
-- ✅ **Vercel Ready** - One-click deployment
-- ✅ **Dark Theme** - Modern, eye-friendly UI
+text
 
-## Quick Start 🚀
-
-1. Clone repo
-2. `npm install`
-3. Create `.env.local` with ANTHROPIC_API_KEY
-4. `npm run dev`
-5. Open http://localhost:3000
-6. Deploy to Vercel
-
-## Environment Variables
+users:read
+files:write
+chat:write
+The bot must be invited to every channel that receives messages or file attachments.
