@@ -113,6 +113,37 @@ async function uploadFilesAndPost({ files, channelId, messageText, botToken }) {
   }
 }
 
+async function resolveSlackChannelId(channelName, botToken) {
+  let cursor = '';
+
+  do {
+    const params = new URLSearchParams({
+      exclude_archived: 'true',
+      limit: '200',
+      types: 'public_channel,private_channel',
+    });
+    if (cursor) params.set('cursor', cursor);
+
+    const response = await fetch(`https://slack.com/api/conversations.list?${params.toString()}`, {
+      headers: {
+        Authorization: `Bearer ${botToken}`,
+      },
+    });
+    const data = await response.json();
+
+    if (!response.ok || !data.ok) {
+      throw new Error(`Unable to find #${channelName}: ${data.error || response.statusText}`);
+    }
+
+    const channel = (data.channels || []).find(item => item.name === channelName);
+    if (channel) return channel.id;
+
+    cursor = data.response_metadata?.next_cursor || '';
+  } while (cursor);
+
+  throw new Error(`Slack channel #${channelName} was not found or is not accessible to the bot`);
+}
+
 async function postMessageWithBot({ channelId, messageText, botToken }) {
   const response = await fetch('https://slack.com/api/chat.postMessage', {
     method: 'POST',
@@ -174,8 +205,8 @@ export default async function handler(req, res) {
   const attachments = normaliseFiles(files.attachments);
   const mappedChannel = getPlatformChannel(formData.platform);
   const defaultChannelId = process.env.SLACK_DEFAULT_CHANNEL_ID?.trim();
-  const targetChannelId = mappedChannel.id || defaultChannelId;
   const botToken = process.env.SLACK_BOT_TOKEN?.trim();
+  const isMappedChannel = mappedChannel.name !== 'flow-test';
   const ccIds = [...new Set([formData.userId, ...formData.ccUserIds].filter(Boolean))];
   const ccLine = ccIds.length
     ? `CC: ${ccIds.map(userId => `<@${userId}>`).join(' ')}`
@@ -189,7 +220,7 @@ export default async function handler(req, res) {
     ? `\n\n*If Other, please explain*\n${formData.otherExplain}`
     : '';
   // Keep the Slack message layout consistent with the requested design.
-  const messageText = `*Submitted the Website Requests Form with Priority* ${priorityEmoji} ${formData.priority}
+  const messageText = `🎫 *Submitted the Website Requests Form with Priority* ${priorityEmoji} ${formData.priority}
 
 *Category* ${formData.category}${otherLine}
 
@@ -214,6 +245,12 @@ ${formData.description}${ccLine ? `\n\n${ccLine}` : ''}`;
         });
       }
 
+      const targetChannelId = mappedChannel.id || (
+        isMappedChannel
+          ? await resolveSlackChannelId(mappedChannel.name, botToken)
+          : defaultChannelId
+      );
+
       if (!targetChannelId) {
         return res.status(500).json({
           success: false,
@@ -227,7 +264,7 @@ ${formData.description}${ccLine ? `\n\n${ccLine}` : ''}`;
         messageText,
         botToken,
       });
-    } else if (mappedChannel.id) {
+    } else if (isMappedChannel) {
       if (!botToken) {
         return res.status(500).json({
           success: false,
@@ -235,14 +272,16 @@ ${formData.description}${ccLine ? `\n\n${ccLine}` : ''}`;
         });
       }
 
+      const targetChannelId = mappedChannel.id || await resolveSlackChannelId(mappedChannel.name, botToken);
+
       await postMessageWithBot({
-        channelId: mappedChannel.id,
+        channelId: targetChannelId,
         messageText,
         botToken,
       });
     } else {
-      // Until platform routing is enabled, text-only tickets continue using
-      // the existing flow-test incoming webhook.
+      // The flow-test incoming webhook remains the fallback for any platform
+      // that does not have its own channel mapping.
       const webhookUrl = process.env.SLACK_WEBHOOK_URL?.trim();
 
       if (!webhookUrl) {
