@@ -41,6 +41,7 @@ export default function Home() {
     'Microsoft Sharepoint',
     'Zendesk',
     'Social Media',
+    'Shopify Access',
     'Other'
   ];
  
