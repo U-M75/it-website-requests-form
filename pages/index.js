@@ -45,7 +45,7 @@ export default function Home() {
   ];
  
  
-  // ✅ USEEFFECT - Real users fetch کریں جب component mount ہو
+  // ✅ Fetch real Slack users when the component mounts
   useEffect(() => {
     const fetchSlackUsers = async () => {
       try {
@@ -80,7 +80,7 @@ export default function Home() {
     };
  
     fetchSlackUsers();
-  }, []); // Dependency array خالی - صرف mount پر چلے
+  }, []); // Run once when the component mounts
  
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -244,15 +244,15 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>IT/Website Requests Form</title>
+        <title>KSC Tickets</title>
       </Head>
  
       <div style={{ minHeight: '100vh', backgroundColor: '#0f1419', color: '#e0e0e0', padding: '20px', fontFamily: 'system-ui' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', flexWrap: 'wrap', gap: '12px' }}>
-            <h1 style={{ margin: 0, fontSize: '24px' }}>📋 IT/Website Requests Form</h1>
+            <h1 style={{ margin: 0, fontSize: '24px' }}>KSC Tickets</h1>
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              {conversationRef.current.length > 0 && (
+              {!submissionSuccess && conversationRef.current.length > 0 && (
                 <>
                   <button onClick={() => setShowHistory(!showHistory)} style={{ padding: '8px 16px', backgroundColor: '#1e88e5', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px' }}>
                     {showHistory ? '👁️ Hide' : '👁️ View'} ({conversationRef.current.length})
@@ -352,7 +352,7 @@ export default function Home() {
                   ))}
                 </select>
                 <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
-                  Optional: jis user ko CC karna ho select karein.
+                  Optional: Select a user to CC.
                 </div>
               </div>
  
