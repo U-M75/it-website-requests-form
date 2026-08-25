@@ -22,6 +22,7 @@ export default function Home() {
  
   const [selectedChannel, setSelectedChannel] = useState('flow-test');
   const [loading, setLoading] = useState(false);
+  const [submissionSuccess, setSubmissionSuccess] = useState(null);
   const [conversationHistory, setConversationHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
   const [tokenWarning, setTokenWarning] = useState(false);
@@ -41,11 +42,13 @@ export default function Home() {
     'Other'
   ];
  
+  // Display names for the channels. The API uses the corresponding Slack IDs.
+  // Platforms without a mapping remain on the current flow-test webhook for now.
   const platformChannelMap = {
-    'Retail - Kawaii Slime Company Web': 'flow-test',
-    'Retail - Jellyland USA Web': 'flow-test',
-    'B2B - The Kawaii Company': 'flow-test',
-    'Disney POS': 'flow-test',
+    'Retail - Kawaii Slime Company Web': 'dev-itgeeks-ksc',
+    'Retail - Jellyland USA Web': 'dev-itgeeks-jellyland',
+    'B2B - The Kawaii Company': 'dev-itgeeks-tkc',
+    'Disney POS': 'jk-tickets-slack-pos',
     'Slack': 'flow-test',
     'Microsoft Sharepoint': 'flow-test',
     'Zendesk': 'flow-test',
@@ -182,7 +185,10 @@ export default function Home() {
         : { success: false, error: `Server returned ${response.status} instead of JSON` };
  
       if (result.success) {
-        alert('✅ Form submitted successfully to Slack!');
+        setSubmissionSuccess({
+          channel: selectedChannel,
+          platform: formData.platform,
+        });
  
         const timestamp = new Date().toLocaleString();
         const entry = {
@@ -263,13 +269,6 @@ export default function Home() {
             </div>
           </div>
  
-          {/* ✅ Loading/Error indicator */}
-          {usersLoading && (
-            <div style={{ backgroundColor: '#1e88e5', color: '#fff', padding: '12px', borderRadius: '6px', marginBottom: '20px' }}>
-              ⏳ Loading Slack users...
-            </div>
-          )}
- 
           {usersError && (
             <div style={{ backgroundColor: '#f44336', color: '#fff', padding: '12px', borderRadius: '6px', marginBottom: '20px' }}>
               ⚠️ Error loading users: {usersError}
@@ -296,13 +295,30 @@ export default function Home() {
             </div>
           )}
  
+          {submissionSuccess ? (
+            <div style={{ backgroundColor: '#1a1e27', border: '1px solid #333', borderRadius: '8px', padding: '40px 24px', textAlign: 'center' }}>
+              <div style={{ fontSize: '48px', marginBottom: '12px' }}>✅</div>
+              <h2 style={{ margin: '0 0 12px' }}>Thank you!</h2>
+              <p style={{ color: '#b8c0cc', margin: '0 0 8px' }}>Your request has been submitted successfully.</p>
+              <p style={{ color: '#8ab4f8', margin: '0 0 24px' }}>
+                It was sent to <strong>#{submissionSuccess.channel}</strong>
+              </p>
+              <button
+                type="button"
+                onClick={() => setSubmissionSuccess(null)}
+                style={{ padding: '10px 24px', backgroundColor: '#1e88e5', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}
+              >
+                Submit another request
+              </button>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit}>
             <div style={{ backgroundColor: '#1a1e27', border: '1px solid #333', borderRadius: '8px', padding: '24px' }}>
               
               {/* Your Name - DROPDOWN with real users */}
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
-                  Your Name * {usersLoading && '(Loading...)'}
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+                  Your Name *
                 </label>
                 <select 
                   value={formData.userId} 
@@ -311,7 +327,7 @@ export default function Home() {
                   style={{...selectStyle, opacity: usersLoading ? 0.6 : 1}}
                 >
                   <option value="">
-                    {usersLoading ? 'Loading users...' : usersError ? 'Users unavailable' : 'Select a user'}
+                    {usersError ? 'Users unavailable' : 'Select a user'}
                   </option>
                   {slackUsers.map(user => (
                     <option key={user.userId} value={user.userId}>
@@ -355,6 +371,9 @@ export default function Home() {
                   <option value="">Select an option</option>
                   {platformOptions.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
+                <div style={{ marginTop: '8px', color: '#8ab4f8', fontSize: '13px' }}>
+                  📤 This ticket will be sent to: <strong>#{selectedChannel}</strong>
+                </div>
               </div>
  
               {/* Where it is Happening */}
@@ -407,6 +426,7 @@ export default function Home() {
               </div>
             </div>
           </form>
+          )}
         </div>
       </div>
     </>
