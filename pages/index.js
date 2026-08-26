@@ -357,14 +357,16 @@ export default function Home() {
     }
   };
 
-  const filteredNameUsers =
-    formData.user.trim().length > 0
-      ? slackUsers.filter((user) =>
+const filteredNameUsers =
+  formData.user.trim().length > 0
+    ? slackUsers.filter(
+        (user) =>
+          user.userId !== formData.userId &&
           user.name
             .toLowerCase()
             .includes(formData.user.toLowerCase())
-        )
-      : [];
+      )
+    : [];
 
   const filteredCcUsers =
     formData.ccSearch.trim().length > 0
