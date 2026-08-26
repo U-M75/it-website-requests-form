@@ -392,6 +392,7 @@ function MyApp({ Component, pageProps }) {
             background 160ms ease;
         }
 
+        /* Dropdown */
         .select-wrapper {
           position: relative;
           width: 100%;
@@ -400,16 +401,17 @@ function MyApp({ Component, pageProps }) {
         .select-wrapper .form-control {
           appearance: none;
           -webkit-appearance: none;
+          -moz-appearance: none;
           cursor: pointer;
-          padding-right: 42px;
+          padding-right: 52px;
         }
 
         .select-arrow {
           position: absolute;
           top: 50%;
-          right: 14px;
-          width: 8px;
-          height: 8px;
+          right: 18px;
+          width: 9px;
+          height: 9px;
           border-right: 2px solid var(--ksc-muted);
           border-bottom: 2px solid var(--ksc-muted);
           transform: translateY(-65%) rotate(45deg);
@@ -821,6 +823,14 @@ function MyApp({ Component, pageProps }) {
             border-radius: 20px;
             padding: 40px 18px;
           }
+
+          .select-wrapper .form-control {
+            padding-right: 50px;
+          }
+
+          .select-arrow {
+            right: 17px;
+          }
         }
 
         @media (max-width: 430px) {
@@ -839,6 +849,14 @@ function MyApp({ Component, pageProps }) {
 
           .cc-preview {
             align-items: flex-start;
+          }
+
+          .select-wrapper .form-control {
+            padding-right: 48px;
+          }
+
+          .select-arrow {
+            right: 16px;
           }
         }
 
