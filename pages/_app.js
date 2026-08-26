@@ -140,48 +140,6 @@ function MyApp({ Component, pageProps }) {
           background: radial-gradient(circle, rgba(154, 219, 239, 0.75), transparent 68%);
         }
 
-        .bubble-layer {
-          position: fixed;
-          inset: 0;
-          z-index: 50;
-          pointer-events: none;
-          overflow: hidden;
-        }
-
-        .cursor-bubble {
-          position: fixed;
-          display: block;
-          border-radius: 50%;
-          pointer-events: none;
-          opacity: 0;
-          transform-origin: center;
-          will-change: transform, left, top, opacity;
-          border: 1px solid rgba(255, 255, 255, 0.72);
-          box-shadow:
-            inset -3px -4px 7px rgba(255, 255, 255, 0.35),
-            0 3px 9px rgba(139, 94, 60, 0.08);
-        }
-
-        .cursor-bubble[data-color='pink'] {
-          background: radial-gradient(
-            circle at 31% 27%,
-            #ffffff 0 12%,
-            rgba(250, 204, 220, 0.92) 42%,
-            rgba(250, 204, 220, 0.3) 76%,
-            transparent 100%
-          );
-        }
-
-        .cursor-bubble[data-color='blue'] {
-          background: radial-gradient(
-            circle at 31% 27%,
-            #ffffff 0 12%,
-            rgba(154, 219, 239, 0.92) 42%,
-            rgba(154, 219, 239, 0.3) 76%,
-            transparent 100%
-          );
-        }
-
         .ksc-shell {
           position: relative;
           z-index: 2;
@@ -403,6 +361,7 @@ function MyApp({ Component, pageProps }) {
         select.form-control {
           appearance: auto;
           cursor: pointer;
+          padding-right: 38px;
         }
 
         .form-control::placeholder {
