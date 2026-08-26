@@ -392,10 +392,28 @@ function MyApp({ Component, pageProps }) {
             background 160ms ease;
         }
 
-        select.form-control {
-          appearance: auto;
+        .select-wrapper {
+          position: relative;
+          width: 100%;
+        }
+
+        .select-wrapper .form-control {
+          appearance: none;
+          -webkit-appearance: none;
           cursor: pointer;
-          padding-right: 34px;
+          padding-right: 42px;
+        }
+
+        .select-arrow {
+          position: absolute;
+          top: 50%;
+          right: 14px;
+          width: 8px;
+          height: 8px;
+          border-right: 2px solid var(--ksc-muted);
+          border-bottom: 2px solid var(--ksc-muted);
+          transform: translateY(-65%) rotate(45deg);
+          pointer-events: none;
         }
 
         .form-control::placeholder {
