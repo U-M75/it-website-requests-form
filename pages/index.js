@@ -227,14 +227,14 @@ export default function Home() {
     width: '100%',
     padding: '10px',
     paddingRight: '35px',
-    backgroundColor: '#0f1419',
-    border: '1px solid #444',
-    borderRadius: '6px',
-    color: '#e0e0e0',
+    backgroundColor: '#fff6f6',
+    border: '1px solid #f2a5a3',
+    borderRadius: '10px',
+    color: '#8b5e3b',
     fontSize: '14px',
     boxSizing: 'border-box',
     appearance: 'none',
-    backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e0e0e0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+    backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b5e3b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
     backgroundRepeat: 'no-repeat',
     backgroundPosition: 'right 10px center',
     backgroundSize: '1.5em',
@@ -246,19 +246,22 @@ export default function Home() {
     <>
       <Head>
         <title>KSC Tickets</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </Head>
  
-      <div style={{ minHeight: '100vh', backgroundColor: '#0f1419', color: '#e0e0e0', padding: '20px', fontFamily: 'system-ui' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #fbdce6 0%, #c7eaf9 100%)', color: '#8b5e3b', padding: '24px 20px 40px', fontFamily: 'Quicksand, sans-serif' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', flexWrap: 'wrap', gap: '12px' }}>
-            <h1 style={{ margin: 0, fontSize: '24px' }}>KSC Tickets</h1>
+            <h1 style={{ margin: 0, fontSize: '30px', fontWeight: '700', letterSpacing: '0.2px' }}>KSC Tickets</h1>
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               {!submissionSuccess && conversationRef.current.length > 0 && (
                 <>
-                  <button onClick={() => setShowHistory(!showHistory)} style={{ padding: '8px 16px', backgroundColor: '#1e88e5', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px' }}>
+                  <button onClick={() => setShowHistory(!showHistory)} style={{ padding: '8px 16px', backgroundColor: '#8b5e3b', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '14px' }}>
                     {showHistory ? '👁️ Hide' : '👁️ View'} ({conversationRef.current.length})
                   </button>
-                  <button onClick={exportAsZip} style={{ padding: '8px 16px', backgroundColor: '#4caf50', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px' }}>
+                  <button onClick={exportAsZip} style={{ padding: '8px 16px', backgroundColor: '#ff7380', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '14px' }}>
                     📦 Export Zip
                   </button>
                 </>
@@ -267,25 +270,25 @@ export default function Home() {
           </div>
  
           {usersError && (
-            <div style={{ backgroundColor: '#f44336', color: '#fff', padding: '12px', borderRadius: '6px', marginBottom: '20px' }}>
+            <div style={{ backgroundColor: '#e96b77', color: '#fff', padding: '12px', borderRadius: '10px', marginBottom: '20px' }}>
               ⚠️ Error loading users: {usersError}
             </div>
           )}
  
           {tokenWarning && (
-            <div style={{ backgroundColor: '#d32f2f', color: '#fff', padding: '12px', borderRadius: '6px', marginBottom: '20px' }}>
+            <div style={{ backgroundColor: '#e96b77', color: '#fff', padding: '12px', borderRadius: '10px', marginBottom: '20px' }}>
               ⚠️ Approaching token limit! Consider exporting conversation as ZIP.
             </div>
           )}
  
           {showHistory && (
-            <div style={{ backgroundColor: '#1a1e27', border: '1px solid #333', borderRadius: '8px', padding: '16px', marginBottom: '24px', maxHeight: '300px', overflowY: 'auto' }}>
+            <div style={{ backgroundColor: '#ffffff', border: '1px solid #f9ccda', borderRadius: '14px', padding: '16px', boxShadow: '0 8px 24px rgba(139, 94, 59, 0.10)', marginBottom: '24px', maxHeight: '300px', overflowY: 'auto' }}>
               <h3 style={{ marginTop: 0 }}>📝 Conversation History</h3>
               {conversationRef.current.map((entry, idx) => (
-                <div key={idx} style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid #333' }}>
-                  <div style={{ fontSize: '12px', color: '#888' }}>#{idx + 1} - {entry.timestamp}</div>
+                <div key={idx} style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid #f9ccda' }}>
+                  <div style={{ fontSize: '12px', color: '#906645' }}>#{idx + 1} - {entry.timestamp}</div>
                   <div style={{ fontSize: '13px', marginTop: '4px' }}>
-                    <strong>{entry.data.user}</strong> | {entry.data.category} | #{entry.channel} | <span style={{ color: entry.status === 'posted' ? '#4caf50' : '#f44336' }}>{entry.status}</span>
+                    <strong>{entry.data.user}</strong> | {entry.data.category} | #{entry.channel} | <span style={{ color: entry.status === 'posted' ? '#ff7380' : '#e96b77' }}>{entry.status}</span>
                   </div>
                 </div>
               ))}
@@ -293,24 +296,24 @@ export default function Home() {
           )}
  
           {submissionSuccess ? (
-            <div style={{ backgroundColor: '#1a1e27', border: '1px solid #333', borderRadius: '8px', padding: '40px 24px', textAlign: 'center' }}>
+            <div style={{ backgroundColor: '#ffffff', border: '1px solid #f9ccda', borderRadius: '14px', padding: '40px 24px', boxShadow: '0 8px 24px rgba(139, 94, 59, 0.10)', textAlign: 'center' }}>
               <div style={{ fontSize: '48px', marginBottom: '12px' }}>✅</div>
               <h2 style={{ margin: '0 0 12px' }}>Thank you!</h2>
-              <p style={{ color: '#b8c0cc', margin: '0 0 8px' }}>Your request has been submitted successfully.</p>
-              <p style={{ color: '#8ab4f8', margin: '0 0 24px' }}>
+              <p style={{ color: '#906645', margin: '0 0 8px' }}>Your request has been submitted successfully.</p>
+              <p style={{ color: '#2f5363', margin: '0 0 24px' }}>
                 It was sent to <strong>#{submissionSuccess.channel}</strong>
               </p>
               <button
                 type="button"
                 onClick={() => setSubmissionSuccess(null)}
-                style={{ padding: '10px 24px', backgroundColor: '#1e88e5', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}
+                style={{ padding: '10px 24px', backgroundColor: '#8b5e3b', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}
               >
                 Submit another request
               </button>
             </div>
           ) : (
           <form onSubmit={handleSubmit}>
-            <div style={{ backgroundColor: '#1a1e27', border: '1px solid #333', borderRadius: '8px', padding: '24px' }}>
+            <div style={{ backgroundColor: '#ffffff', border: '1px solid #f9ccda', borderRadius: '14px', padding: '24px', boxShadow: '0 8px 24px rgba(139, 94, 59, 0.10)' }}>
               
               {/* Your Name - DROPDOWN with real users */}
               <div style={{ marginBottom: '16px' }}>
@@ -352,7 +355,7 @@ export default function Home() {
                     </option>
                   ))}
                 </select>
-                <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+                <div style={{ fontSize: '12px', color: '#906645', marginTop: '4px' }}>
                   Optional: Select a user to CC.
                 </div>
               </div>
@@ -370,7 +373,7 @@ export default function Home() {
               {formData.category === 'Other' && (
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>If Other, please explain (optional)</label>
-                  <input type="text" name="otherExplain" value={formData.otherExplain} onChange={handleInputChange} placeholder="Write something" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box' }} />
+                  <input type="text" name="otherExplain" value={formData.otherExplain} onChange={handleInputChange} placeholder="Write something" style={{ width: '100%', padding: '10px', backgroundColor: '#fff6f6', border: '1px solid #f2a5a3', borderRadius: '10px', color: '#8b5e3b', fontSize: '14px', boxSizing: 'border-box' }} />
                 </div>
               )}
  
@@ -392,7 +395,7 @@ export default function Home() {
                   {platformOptions.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
                 {formData.platform && (
-                  <div style={{ marginTop: '8px', color: '#8ab4f8', fontSize: '13px' }}>
+                  <div style={{ marginTop: '8px', color: '#2f5363', fontSize: '13px' }}>
                     📤 This ticket will be sent to: <strong>#{selectedChannel}</strong>
                   </div>
                 )}
@@ -401,28 +404,28 @@ export default function Home() {
               {/* Where it is Happening */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Where it is Happening *</label>
-                <input type="text" name="whereHappening" value={formData.whereHappening} onChange={handleInputChange} placeholder="Shopify" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box' }} />
+                <input type="text" name="whereHappening" value={formData.whereHappening} onChange={handleInputChange} placeholder="Shopify" style={{ width: '100%', padding: '10px', backgroundColor: '#fff6f6', border: '1px solid #f2a5a3', borderRadius: '10px', color: '#8b5e3b', fontSize: '14px', boxSizing: 'border-box' }} />
               </div>
  
               {/* Expected vs. Actual */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Expected vs. Actual (optional)</label>
-                <textarea name="expectedVsActual" value={formData.expectedVsActual} onChange={handleInputChange} placeholder="" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box', fontFamily: 'inherit', minHeight: '150px', resize: 'vertical' }} />
+                <textarea name="expectedVsActual" value={formData.expectedVsActual} onChange={handleInputChange} placeholder="" style={{ width: '100%', padding: '10px', backgroundColor: '#fff6f6', border: '1px solid #f2a5a3', borderRadius: '10px', color: '#8b5e3b', fontSize: '14px', boxSizing: 'border-box', fontFamily: 'inherit', minHeight: '150px', resize: 'vertical' }} />
               </div>
  
               {/* Attachments */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Attachments</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', backgroundColor: '#fff6f6', border: '1px solid #f2a5a3', borderRadius: '10px' }}>
                   <span>📎</span>
                   <label style={{ cursor: 'pointer', flex: 1 }}>
                     <input type="file" multiple onChange={handleFileChange} style={{ display: 'none' }} />
-                    <span style={{ color: '#1e88e5' }}>Upload file</span>
+                    <span style={{ color: '#8b5e3b' }}>Upload file</span>
                   </label>
                 </div>
-                <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>Add screenshots of the bugs, issues or new feature.</div>
+                <div style={{ fontSize: '12px', color: '#906645', marginTop: '4px' }}>Add screenshots of the bugs, issues or new feature.</div>
                 {formData.attachments.length > 0 && (
-                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#4caf50' }}>
+                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#ff7380' }}>
                     ✅ {formData.attachments.length} file(s) selected
                   </div>
                 )}
@@ -431,11 +434,11 @@ export default function Home() {
               {/* Ticket Description */}
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Ticket Description *</label>
-                <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="" style={{ width: '100%', padding: '10px', backgroundColor: '#0f1419', border: '1px solid #444', borderRadius: '6px', color: '#e0e0e0', fontSize: '14px', boxSizing: 'border-box', fontFamily: 'inherit', minHeight: '100px', resize: 'vertical' }} />
+                <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="" style={{ width: '100%', padding: '10px', backgroundColor: '#fff6f6', border: '1px solid #f2a5a3', borderRadius: '10px', color: '#8b5e3b', fontSize: '14px', boxSizing: 'border-box', fontFamily: 'inherit', minHeight: '100px', resize: 'vertical' }} />
               </div>
  
               {/* CC preview */}
-              <div style={{ backgroundColor: '#0f1419', padding: '12px', borderRadius: '6px', marginBottom: '20px', fontSize: '13px', border: '1px solid #333' }}>
+              <div style={{ backgroundColor: '#fff6f6', padding: '12px', borderRadius: '10px', marginBottom: '20px', fontSize: '13px', border: '1px solid #f9ccda' }}>
                 <strong>CC:</strong>{' '}
                 {selectedCcUsers.length > 0
                   ? selectedCcUsers.map(user => user.name).join(', ')
@@ -444,8 +447,8 @@ export default function Home() {
  
               {/* Buttons */}
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => { setFormData({ user: '', userId: '', ccUserIds: [], category: '', otherExplain: '', priority: 'Medium', platform: '', whereHappening: '', expectedVsActual: '', attachments: [], description: '' }); setSelectedChannel(DEFAULT_CHANNEL.name); }} style={{ padding: '10px 24px', backgroundColor: '#424242', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>Close</button>
-                <button type="submit" disabled={loading || usersLoading} style={{ padding: '10px 24px', backgroundColor: loading || usersLoading ? '#666' : '#4caf50', color: '#fff', border: 'none', borderRadius: '6px', cursor: loading || usersLoading ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: '500' }}>{loading ? '⏳ Submitting...' : '✅ Submit'}</button>
+                <button type="button" onClick={() => { setFormData({ user: '', userId: '', ccUserIds: [], category: '', otherExplain: '', priority: 'Medium', platform: '', whereHappening: '', expectedVsActual: '', attachments: [], description: '' }); setSelectedChannel(DEFAULT_CHANNEL.name); }} style={{ padding: '10px 24px', backgroundColor: '#8b5e3b', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>Close</button>
+                <button type="submit" disabled={loading || usersLoading} style={{ padding: '10px 24px', backgroundColor: loading || usersLoading ? '#c2c2c2' : '#ff7380', color: '#fff', border: 'none', borderRadius: '10px', cursor: loading || usersLoading ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: '500' }}>{loading ? '⏳ Submitting...' : '✅ Submit'}</button>
               </div>
             </div>
           </form>
