@@ -29,6 +29,7 @@ export default function Home() {
   const [showHistory, setShowHistory] = useState(false);
   const [tokenWarning, setTokenWarning] = useState(false);
   const conversationRef = useRef([]);
+  const bubbleLayerRef = useRef(null);
  
   const categoryOptions = ['UI/Design Bug', 'Functionality Issue', 'Mobile Responsive', 'New Feature Request', 'Security/Access', 'Other'];
   
@@ -82,6 +83,104 @@ export default function Home() {
  
     fetchSlackUsers();
   }, []); // Run once when the component mounts
+
+  // Match the KSC website's click-and-drag bubble trail.
+  useEffect(() => {
+    const layer = bubbleLayerRef.current;
+    if (!layer) return undefined;
+
+    let pointerDown = false;
+    let animationFrame;
+    let lastFrame = performance.now();
+    const bubbles = [];
+    const lifetime = 5000;
+    const maxBubbles = 70;
+
+    const createBubble = (x, y) => {
+      const size = 10 + Math.random() * 24;
+      const bubble = document.createElement('span');
+      bubble.setAttribute('aria-hidden', 'true');
+      bubble.style.position = 'fixed';
+      bubble.style.left = `${x - size}px`;
+      bubble.style.top = `${y - size}px`;
+      bubble.style.width = `${size * 2}px`;
+      bubble.style.height = `${size * 2}px`;
+      bubble.style.borderRadius = '50%';
+      bubble.style.pointerEvents = 'none';
+      bubble.style.opacity = '0.75';
+      bubble.style.background = 'radial-gradient(circle at 30% 28%, #ffffff 0 12%, #b1e0f9 48%, #c7eaf9 72%, rgba(255, 255, 255, 0.25) 100%)';
+      bubble.style.border = '1px solid rgba(139, 94, 59, 0.18)';
+      bubble.style.boxShadow = 'inset -3px -4px 8px rgba(120, 214, 240, 0.28), 0 2px 8px rgba(139, 94, 59, 0.12)';
+      layer.appendChild(bubble);
+
+      bubbles.push({
+        element: bubble,
+        size,
+        remaining: lifetime,
+        x,
+        y,
+        velocityX: (Math.random() - 0.5) * 0.04,
+        velocityY: 0,
+      });
+
+      while (bubbles.length > maxBubbles) {
+        const oldest = bubbles.shift();
+        oldest?.element.remove();
+      }
+    };
+
+    const onPointerDown = () => {
+      pointerDown = true;
+    };
+
+    const onPointerUp = () => {
+      pointerDown = false;
+    };
+
+    const onPointerMove = event => {
+      if (pointerDown) createBubble(event.clientX, event.clientY);
+    };
+
+    const animate = now => {
+      const delta = Math.min(now - lastFrame, 50);
+      lastFrame = now;
+
+      for (let index = bubbles.length - 1; index >= 0; index -= 1) {
+        const bubble = bubbles[index];
+        bubble.remaining -= delta;
+        bubble.velocityY += 0.0025 * delta;
+        bubble.velocityX -= bubble.velocityX * 0.001 * bubble.size * delta;
+        bubble.velocityY -= bubble.velocityY * 0.001 * bubble.size * delta;
+        bubble.x += bubble.velocityX * delta;
+        bubble.y -= bubble.velocityY * delta;
+        bubble.element.style.left = `${bubble.x - bubble.size}px`;
+        bubble.element.style.top = `${bubble.y - bubble.size}px`;
+        bubble.element.style.opacity = `${0.7 * Math.max(bubble.remaining / lifetime, 0)}`;
+
+        if (bubble.remaining <= 0) {
+          bubble.element.remove();
+          bubbles.splice(index, 1);
+        }
+      }
+
+      animationFrame = requestAnimationFrame(animate);
+    };
+
+    window.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+    window.addEventListener('pointermove', onPointerMove);
+    animationFrame = requestAnimationFrame(animate);
+
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+      window.removeEventListener('pointermove', onPointerMove);
+      cancelAnimationFrame(animationFrame);
+      bubbles.forEach(bubble => bubble.element.remove());
+    };
+  }, []);
  
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -246,22 +345,26 @@ export default function Home() {
     <>
       <Head>
         <title>KSC Tickets</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </Head>
  
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #fbdce6 0%, #c7eaf9 100%)', color: '#8b5e3b', padding: '24px 20px 40px', fontFamily: 'Quicksand, sans-serif' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', flexWrap: 'wrap', gap: '12px' }}>
-            <h1 style={{ margin: 0, fontSize: '30px', fontWeight: '700', letterSpacing: '0.2px' }}>KSC Tickets</h1>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #fbdce6 0%, #c7eaf9 100%)', color: '#8b5e3b', padding: '24px 20px 40px', fontFamily: 'Quicksand, sans-serif', position: 'relative', overflow: 'hidden' }}>
+        <div ref={bubbleLayerRef} aria-hidden="true" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 20, overflow: 'hidden' }} />
+        <div style={{ maxWidth: '760px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+            <img
+              src="/logo.png"
+              alt="Kawaii Slime Company"
+              style={{ display: 'block', width: '150px', height: '150px', objectFit: 'contain', margin: '0 auto 10px' }}
+            />
+            <h1 style={{ margin: 0, fontSize: '32px', fontWeight: '700', letterSpacing: '0.2px', color: '#8b5e3b' }}>KSC Tickets</h1>
+            <p style={{ margin: '6px 0 0', color: '#906645', fontSize: '15px', fontWeight: '500' }}>IT and Website Request Form</p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '16px' }}>
               {!submissionSuccess && conversationRef.current.length > 0 && (
                 <>
-                  <button onClick={() => setShowHistory(!showHistory)} style={{ padding: '8px 16px', backgroundColor: '#8b5e3b', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '14px' }}>
+                  <button onClick={() => setShowHistory(!showHistory)} style={{ padding: '8px 16px', backgroundColor: '#8b5e3b', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '14px', fontWeight: '600' }}>
                     {showHistory ? '👁️ Hide' : '👁️ View'} ({conversationRef.current.length})
                   </button>
-                  <button onClick={exportAsZip} style={{ padding: '8px 16px', backgroundColor: '#ff7380', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '14px' }}>
+                  <button onClick={exportAsZip} style={{ padding: '8px 16px', backgroundColor: '#ff7380', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '14px', fontWeight: '600' }}>
                     📦 Export Zip
                   </button>
                 </>
