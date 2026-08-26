@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { DEFAULT_CHANNEL, getPlatformChannel } from '../lib/slack-channels';
 
@@ -53,50 +53,16 @@ function Field({ label, required, hint, children }) {
   );
 }
 
-function SelectField({
-  name,
-  value,
-  onChange,
-  options,
-  placeholder = 'Select an option',
-}) {
-  return (
-    <div className="select-wrapper">
-      <select
-        name={name}
-        value={value}
-        onChange={onChange}
-        className="form-control"
-      >
-        <option value="">{placeholder}</option>
-
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-
-      <span
-        className="select-arrow"
-        aria-hidden="true"
-      />
-    </div>
-  );
-}
-
 export default function Home() {
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [slackUsers, setSlackUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [usersError, setUsersError] = useState(null);
-  const [selectedChannel, setSelectedChannel] = useState(DEFAULT_CHANNEL.name);
+  const [selectedChannel, setSelectedChannel] = useState(
+    DEFAULT_CHANNEL.name
+  );
   const [loading, setLoading] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(null);
-  const [showHistory, setShowHistory] = useState(false);
-  const [tokenWarning, setTokenWarning] = useState(false);
-
-  const conversationRef = useRef([]);
 
   useEffect(() => {
     const fetchSlackUsers = async () => {
@@ -116,7 +82,9 @@ export default function Home() {
             };
 
         if (!response.ok && !data.error) {
-          throw new Error(`Slack users request failed (${response.status})`);
+          throw new Error(
+            `Slack users request failed (${response.status})`
+          );
         }
 
         if (data.success && data.users) {
@@ -225,49 +193,6 @@ export default function Home() {
     setSelectedChannel(DEFAULT_CHANNEL.name);
   };
 
-  const exportAsZip = async () => {
-    try {
-      const JSZipModule = await import('jszip');
-      const JSZip = JSZipModule.default || JSZipModule;
-      const zip = new JSZip();
-
-      const historyContent = conversationRef.current
-        .map(
-          (entry, index) =>
-            `[${index + 1}] ${entry.timestamp}\n` +
-            `Channel: ${entry.channel}\n` +
-            `Status: ${entry.status}\n---\n` +
-            `User: ${entry.data.user} (${entry.data.userId})\n` +
-            `Category: ${entry.data.category}\n` +
-            `${
-              entry.data.otherExplain
-                ? `Other: ${entry.data.otherExplain}\n`
-                : ''
-            }` +
-            `Priority: ${entry.data.priority}\n` +
-            `Platform: ${entry.data.platform}\n`
-        )
-        .join('\n');
-
-      zip.file('conversation_history.txt', historyContent);
-
-      const blob = await zip.generateAsync({
-        type: 'blob',
-      });
-
-      const url = URL.createObjectURL(blob);
-
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = `ksc_ticket_history_${Date.now()}.zip`;
-      anchor.click();
-
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      alert(`Error exporting: ${error.message}`);
-    }
-  };
-
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -294,7 +219,10 @@ export default function Home() {
       requestData.append('priority', formData.priority);
       requestData.append('platform', formData.platform);
       requestData.append('whereHappening', formData.whereHappening);
-      requestData.append('expectedVsActual', formData.expectedVsActual);
+      requestData.append(
+        'expectedVsActual',
+        formData.expectedVsActual
+      );
       requestData.append('description', formData.description);
       requestData.append('channel', selectedChannel);
 
@@ -326,24 +254,6 @@ export default function Home() {
         );
       }
 
-      const timestamp = new Date().toLocaleString();
-
-      const entry = {
-        timestamp,
-        channel: selectedChannel,
-        status: 'posted',
-        data: {
-          ...formData,
-          attachments: [],
-        },
-      };
-
-      conversationRef.current.push(entry);
-
-      if (conversationRef.current.length > 15) {
-        setTokenWarning(true);
-      }
-
       setSubmissionSuccess({
         channel: selectedChannel,
         platform: formData.platform,
@@ -357,16 +267,16 @@ export default function Home() {
     }
   };
 
-const filteredNameUsers =
-  formData.user.trim().length > 0
-    ? slackUsers.filter(
-        (user) =>
-          user.userId !== formData.userId &&
-          user.name
-            .toLowerCase()
-            .includes(formData.user.toLowerCase())
-      )
-    : [];
+  const filteredNameUsers =
+    formData.user.trim().length > 0
+      ? slackUsers.filter(
+          (user) =>
+            user.userId !== formData.userId &&
+            user.name
+              .toLowerCase()
+              .includes(formData.user.toLowerCase())
+        )
+      : [];
 
   const filteredCcUsers =
     formData.ccSearch.trim().length > 0
@@ -424,32 +334,6 @@ const filteredNameUsers =
                 Tell us what needs fixing, updating, or creating.
               </p>
             </div>
-
-            {!submissionSuccess &&
-              conversationRef.current.length > 0 && (
-                <div className="header-actions">
-                  <button
-                    type="button"
-                    className="button button-light"
-                    onClick={() =>
-                      setShowHistory((visible) => !visible)
-                    }
-                  >
-                    {showHistory
-                      ? 'Hide history'
-                      : 'View history'}{' '}
-                    ({conversationRef.current.length})
-                  </button>
-
-                  <button
-                    type="button"
-                    className="button button-soft"
-                    onClick={exportAsZip}
-                  >
-                    Export ZIP
-                  </button>
-                </div>
-              )}
           </header>
 
           {usersError && (
@@ -463,69 +347,6 @@ const filteredNameUsers =
 
               <span>{usersError}</span>
             </div>
-          )}
-
-          {tokenWarning && (
-            <div
-              className="notice notice-warning"
-              role="status"
-            >
-              You have many submissions in this session.
-              Export the conversation history if you need a
-              copy.
-            </div>
-          )}
-
-          {showHistory && (
-            <section
-              className="history-card"
-              aria-label="Conversation history"
-            >
-              <div className="section-heading">
-                <div>
-                  <p className="section-kicker">
-                    SESSION
-                  </p>
-
-                  <h2>Conversation History</h2>
-                </div>
-
-                <span className="count-pill">
-                  {conversationRef.current.length}
-                </span>
-              </div>
-
-              {conversationRef.current.map(
-                (entry, index) => (
-                  <div
-                    className="history-item"
-                    key={`${entry.timestamp}-${index}`}
-                  >
-                    <div className="history-meta">
-                      #{index + 1} · {entry.timestamp}
-                    </div>
-
-                    <div className="history-main">
-                      <strong>
-                        {entry.data.user}
-                      </strong>
-
-                      <span>
-                        {entry.data.category}
-                      </span>
-
-                      <span>
-                        #{entry.channel}
-                      </span>
-
-                      <span className="status-pill">
-                        {entry.status}
-                      </span>
-                    </div>
-                  </div>
-                )
-              )}
-            </section>
           )}
 
           {submissionSuccess ? (
@@ -705,12 +526,27 @@ const filteredNameUsers =
                     label="Category"
                     required
                   >
-                    <SelectField
+                    <select
                       name="category"
                       value={formData.category}
                       onChange={handleInputChange}
-                      options={categoryOptions}
-                    />
+                      className="form-control"
+                    >
+                      <option value="">
+                        Select an option
+                      </option>
+
+                      {categoryOptions.map(
+                        (category) => (
+                          <option
+                            key={category}
+                            value={category}
+                          >
+                            {category}
+                          </option>
+                        )
+                      )}
+                    </select>
                   </Field>
 
                   {formData.category === 'Other' && (
@@ -732,28 +568,51 @@ const filteredNameUsers =
                     label="Priority"
                     required
                   >
-                    <SelectField
+                    <select
                       name="priority"
                       value={formData.priority}
                       onChange={handleInputChange}
-                      options={[
-                        'High',
-                        'Medium',
-                        'Low',
-                      ]}
-                    />
+                      className="form-control"
+                    >
+                      <option value="High">
+                        🔴 High
+                      </option>
+
+                      <option value="Medium">
+                        🟡 Medium
+                      </option>
+
+                      <option value="Low">
+                        🟢 Low
+                      </option>
+                    </select>
                   </Field>
 
                   <Field
                     label="Which Platform"
                     required
                   >
-                    <SelectField
+                    <select
                       name="platform"
                       value={formData.platform}
                       onChange={handlePlatformChange}
-                      options={platformOptions}
-                    />
+                      className="form-control"
+                    >
+                      <option value="">
+                        Select an option
+                      </option>
+
+                      {platformOptions.map(
+                        (platform) => (
+                          <option
+                            key={platform}
+                            value={platform}
+                          >
+                            {platform}
+                          </option>
+                        )
+                      )}
+                    </select>
 
                     {formData.platform && (
                       <div className="routing-note">
