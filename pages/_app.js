@@ -111,9 +111,22 @@ function MyApp({ Component, pageProps }) {
           overflow: hidden;
           padding: 38px 20px 28px;
           background:
-            radial-gradient(circle at 8% 7%, rgba(248, 203, 217, 0.68), transparent 26%),
-            radial-gradient(circle at 94% 18%, rgba(154, 219, 239, 0.46), transparent 27%),
-            linear-gradient(135deg, #fff9fb 0%, #fff5f8 46%, #f5fcff 100%);
+            radial-gradient(
+              circle at 8% 7%,
+              rgba(248, 203, 217, 0.68),
+              transparent 26%
+            ),
+            radial-gradient(
+              circle at 94% 18%,
+              rgba(154, 219, 239, 0.46),
+              transparent 27%
+            ),
+            linear-gradient(
+              135deg,
+              #fff9fb 0%,
+              #fff5f8 46%,
+              #f5fcff 100%
+            );
         }
 
         .ksc-page::before,
@@ -131,13 +144,21 @@ function MyApp({ Component, pageProps }) {
         .ksc-page::before {
           top: 35%;
           left: -130px;
-          background: radial-gradient(circle, rgba(248, 203, 217, 0.9), transparent 68%);
+          background: radial-gradient(
+            circle,
+            rgba(248, 203, 217, 0.9),
+            transparent 68%
+          );
         }
 
         .ksc-page::after {
           right: -140px;
           bottom: 8%;
-          background: radial-gradient(circle, rgba(154, 219, 239, 0.75), transparent 68%);
+          background: radial-gradient(
+            circle,
+            rgba(154, 219, 239, 0.75),
+            transparent 68%
+          );
         }
 
         .ksc-shell {
@@ -161,7 +182,9 @@ function MyApp({ Component, pageProps }) {
           display: grid;
           place-items: center;
           margin-bottom: 6px;
-          filter: drop-shadow(0 10px 18px rgba(139, 94, 60, 0.13));
+          filter: drop-shadow(
+            0 10px 18px rgba(139, 94, 60, 0.13)
+          );
         }
 
         .brand-mark img {
@@ -221,7 +244,10 @@ function MyApp({ Component, pageProps }) {
           font-size: 13px;
           font-weight: 800;
           letter-spacing: 0.01em;
-          transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+          transition:
+            transform 160ms ease,
+            box-shadow 160ms ease,
+            background 160ms ease;
         }
 
         .button:hover:not(:disabled) {
@@ -231,11 +257,13 @@ function MyApp({ Component, pageProps }) {
         .button-primary {
           color: #ffffff;
           background: var(--ksc-pink-strong);
-          box-shadow: 0 8px 18px rgba(237, 127, 156, 0.24);
+          box-shadow: 0 8px 18px
+            rgba(237, 127, 156, 0.24);
         }
 
         .button-primary:hover:not(:disabled) {
-          box-shadow: 0 11px 24px rgba(237, 127, 156, 0.3);
+          box-shadow: 0 11px 24px
+            rgba(237, 127, 156, 0.3);
         }
 
         .button-secondary {
@@ -321,7 +349,10 @@ function MyApp({ Component, pageProps }) {
 
         .form-grid {
           display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-template-columns: repeat(
+            2,
+            minmax(0, 1fr)
+          );
           gap: 18px 16px;
         }
 
@@ -355,12 +386,16 @@ function MyApp({ Component, pageProps }) {
           color: var(--ksc-text);
           font-size: 14px;
           line-height: 1.45;
-          transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+          transition:
+            border-color 160ms ease,
+            box-shadow 160ms ease,
+            background 160ms ease;
         }
 
         select.form-control {
           appearance: auto;
           cursor: pointer;
+          padding-right: 34px;
         }
 
         .form-control::placeholder {
@@ -388,6 +423,87 @@ function MyApp({ Component, pageProps }) {
           line-height: 1.5;
         }
 
+        .autocomplete {
+          position: relative;
+        }
+
+        .suggestions {
+          position: absolute;
+          top: calc(100% + 5px);
+          left: 0;
+          right: 0;
+          z-index: 20;
+          max-height: 210px;
+          overflow-y: auto;
+          padding: 5px;
+          border: 1px solid var(--ksc-border);
+          border-radius: 12px;
+          background: #ffffff;
+          box-shadow: 0 12px 30px
+            rgba(139, 94, 60, 0.14);
+        }
+
+        .suggestion-item {
+          width: 100%;
+          display: block;
+          padding: 10px 11px;
+          border-radius: 8px;
+          background: transparent;
+          color: var(--ksc-text);
+          text-align: left;
+          font-size: 13px;
+          cursor: pointer;
+          transition:
+            background 140ms ease,
+            color 140ms ease;
+        }
+
+        .suggestion-item:hover,
+        .suggestion-item:focus {
+          background: var(--ksc-pink-soft);
+          color: var(--ksc-brown-dark);
+        }
+
+        .cc-selected-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 7px;
+          margin-top: 8px;
+        }
+
+        .cc-selected-user {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          min-height: 30px;
+          padding: 4px 7px 4px 10px;
+          border: 1px solid #ecc6d4;
+          border-radius: 999px;
+          background: var(--ksc-pink-soft);
+          color: var(--ksc-brown);
+          font-size: 11px;
+          font-weight: 700;
+        }
+
+        .cc-selected-user button {
+          width: 20px;
+          height: 20px;
+          display: grid;
+          place-items: center;
+          padding: 0;
+          border-radius: 50%;
+          background: transparent;
+          color: var(--ksc-brown);
+          font-size: 16px;
+          line-height: 1;
+          cursor: pointer;
+        }
+
+        .cc-selected-user button:hover {
+          background: #ffffff;
+          color: var(--ksc-pink-strong);
+        }
+
         .routing-note {
           display: flex;
           align-items: center;
@@ -407,7 +523,8 @@ function MyApp({ Component, pageProps }) {
           flex: 0 0 7px;
           border-radius: 50%;
           background: var(--ksc-blue);
-          box-shadow: 0 0 0 4px rgba(154, 219, 239, 0.18);
+          box-shadow: 0 0 0 4px
+            rgba(154, 219, 239, 0.18);
         }
 
         .upload-control {
@@ -418,10 +535,17 @@ function MyApp({ Component, pageProps }) {
           padding: 12px 14px;
           border: 1px dashed #e4b7c7;
           border-radius: 12px;
-          background: linear-gradient(135deg, #fff8fb, #f7fdff);
+          background: linear-gradient(
+            135deg,
+            #fff8fb,
+            #f7fdff
+          );
           color: var(--ksc-brown);
           cursor: pointer;
-          transition: border-color 160ms ease, transform 160ms ease, background 160ms ease;
+          transition:
+            border-color 160ms ease,
+            transform 160ms ease,
+            background 160ms ease;
         }
 
         .upload-control:hover {
@@ -600,7 +724,8 @@ function MyApp({ Component, pageProps }) {
           border-radius: 50%;
           color: #ffffff;
           background: var(--ksc-pink-strong);
-          box-shadow: 0 10px 25px rgba(237, 127, 156, 0.24);
+          box-shadow: 0 10px 25px
+            rgba(237, 127, 156, 0.24);
           font-size: 29px;
           font-weight: 800;
         }
