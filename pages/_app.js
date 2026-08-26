@@ -2,7 +2,7 @@ import React from 'react';
 
 function MyApp({ Component, pageProps }) {
   return (
-    <div style={{ minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', fontFamily: 'Quicksand, sans-serif' }}>
       <Component {...pageProps} />
       <style jsx global>{`
         * {
@@ -13,12 +13,12 @@ function MyApp({ Component, pageProps }) {
         body {
           padding: 0;
           margin: 0;
-          background-color: #0f1419;
-          color: #e0e0e0;
+          background-color: #f6828d;
+          color: #8b5e3b;
         }
 
         a {
-          color: #1e88e5;
+          color: #8b5e3b;
           text-decoration: none;
         }
 
@@ -35,10 +35,13 @@ function MyApp({ Component, pageProps }) {
         textarea:focus,
         select:focus {
           outline: none;
-          border-color: #1e88e5;
-          box-shadow: 0 0 0 2px rgba(30, 136, 229, 0.2);
+          border-color: #8b5e3b;
+          box-shadow: 0 0 0 2px rgba(255, 115, 128, 0.25);
         }
 
+        input,
+        select,
+        button,
         textarea {
           font-family: inherit;
         }
@@ -49,16 +52,16 @@ function MyApp({ Component, pageProps }) {
         }
 
         ::-webkit-scrollbar-track {
-          background: #1a1e27;
+          background: #fff6f6;
         }
 
         ::-webkit-scrollbar-thumb {
-          background: #444;
+          background: #f2a5a3;
           border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-          background: #555;
+          background: #ff7380;
         }
       `}</style>
     </div>
