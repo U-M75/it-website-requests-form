@@ -361,7 +361,6 @@ function MyApp({ Component, pageProps }) {
         select.form-control {
           appearance: auto;
           cursor: pointer;
-          padding-right: 38px;
         }
 
         .form-control::placeholder {
