@@ -53,6 +53,38 @@ function Field({ label, required, hint, children }) {
   );
 }
 
+function SelectField({
+  name,
+  value,
+  onChange,
+  options,
+  placeholder = 'Select an option',
+}) {
+  return (
+    <div className="select-wrapper">
+      <select
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="form-control"
+      >
+        <option value="">{placeholder}</option>
+
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+
+      <span
+        className="select-arrow"
+        aria-hidden="true"
+      />
+    </div>
+  );
+}
+
 export default function Home() {
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [slackUsers, setSlackUsers] = useState([]);
@@ -671,27 +703,12 @@ export default function Home() {
                     label="Category"
                     required
                   >
-                    <select
+                    <SelectField
                       name="category"
                       value={formData.category}
                       onChange={handleInputChange}
-                      className="form-control"
-                    >
-                      <option value="">
-                        Select an option
-                      </option>
-
-                      {categoryOptions.map(
-                        (category) => (
-                          <option
-                            key={category}
-                            value={category}
-                          >
-                            {category}
-                          </option>
-                        )
-                      )}
-                    </select>
+                      options={categoryOptions}
+                    />
                   </Field>
 
                   {formData.category === 'Other' && (
@@ -713,51 +730,28 @@ export default function Home() {
                     label="Priority"
                     required
                   >
-                    <select
+                    <SelectField
                       name="priority"
                       value={formData.priority}
                       onChange={handleInputChange}
-                      className="form-control"
-                    >
-                      <option value="High">
-                        🔴 High
-                      </option>
-
-                      <option value="Medium">
-                        🟡 Medium
-                      </option>
-
-                      <option value="Low">
-                        🟢 Low
-                      </option>
-                    </select>
+                      options={[
+                        'High',
+                        'Medium',
+                        'Low',
+                      ]}
+                    />
                   </Field>
 
                   <Field
                     label="Which Platform"
                     required
                   >
-                    <select
+                    <SelectField
                       name="platform"
                       value={formData.platform}
                       onChange={handlePlatformChange}
-                      className="form-control"
-                    >
-                      <option value="">
-                        Select an option
-                      </option>
-
-                      {platformOptions.map(
-                        (platform) => (
-                          <option
-                            key={platform}
-                            value={platform}
-                          >
-                            {platform}
-                          </option>
-                        )
-                      )}
-                    </select>
+                      options={platformOptions}
+                    />
 
                     {formData.platform && (
                       <div className="routing-note">
