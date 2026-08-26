@@ -55,13 +55,21 @@ export default function Home() {
   const [slackUsers, setSlackUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [usersError, setUsersError] = useState(null);
+
+  const [userSearch, setUserSearch] = useState('');
+  const [ccSearch, setCcSearch] = useState('');
+  const [showUserSuggestions, setShowUserSuggestions] = useState(false);
+  const [showCcSuggestions, setShowCcSuggestions] = useState(false);
+
+  const userFieldRef = useRef(null);
+  const ccFieldRef = useRef(null);
+
   const [selectedChannel, setSelectedChannel] = useState(DEFAULT_CHANNEL.name);
   const [loading, setLoading] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
   const [tokenWarning, setTokenWarning] = useState(false);
   const conversationRef = useRef([]);
-  const bubbleLayerRef = useRef(null);
 
   useEffect(() => {
     const fetchSlackUsers = async () => {
@@ -96,115 +104,126 @@ export default function Home() {
     fetchSlackUsers();
   }, []);
 
-  // KSC-style bubble trail: bubbles follow the pointer while the user moves around the form.
   useEffect(() => {
-    const layer = bubbleLayerRef.current;
-    if (!layer || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      return undefined;
-    }
+    const handleClickOutside = (event) => {
+      if (
+        userFieldRef.current &&
+        !userFieldRef.current.contains(event.target)
+      ) {
+        setShowUserSuggestions(false);
+      }
 
-    const bubbles = [];
-    const lifetime = 2200;
-    const maxBubbles = 42;
-    let lastCreatedAt = 0;
-    let animationFrame;
-
-    const createBubble = (x, y) => {
-      const size = 7 + Math.random() * 15;
-      const bubble = document.createElement('span');
-      bubble.className = 'cursor-bubble';
-      bubble.setAttribute('aria-hidden', 'true');
-
-      const hue = Math.random() > 0.5 ? 'pink' : 'blue';
-      bubble.dataset.color = hue;
-      bubble.style.left = `${x - size}px`;
-      bubble.style.top = `${y - size}px`;
-      bubble.style.width = `${size * 2}px`;
-      bubble.style.height = `${size * 2}px`;
-
-      layer.appendChild(bubble);
-
-      bubbles.push({
-        element: bubble,
-        size,
-        x,
-        y,
-        remaining: lifetime,
-        driftX: (Math.random() - 0.5) * 0.045,
-        driftY: -(0.015 + Math.random() * 0.025),
-      });
-
-      while (bubbles.length > maxBubbles) {
-        bubbles.shift()?.element.remove();
+      if (
+        ccFieldRef.current &&
+        !ccFieldRef.current.contains(event.target)
+      ) {
+        setShowCcSuggestions(false);
       }
     };
 
-    const onPointerMove = (event) => {
-      const now = performance.now();
-      if (now - lastCreatedAt < 32) return;
-      lastCreatedAt = now;
-      createBubble(event.clientX, event.clientY);
-    };
-
-    const animate = (now) => {
-      for (let index = bubbles.length - 1; index >= 0; index -= 1) {
-        const bubble = bubbles[index];
-        bubble.remaining -= 16;
-        bubble.x += bubble.driftX * 16;
-        bubble.y += bubble.driftY * 16;
-
-        const progress = Math.max(bubble.remaining / lifetime, 0);
-        const scale = 0.65 + (1 - progress) * 0.45;
-
-        bubble.element.style.left = `${bubble.x - bubble.size}px`;
-        bubble.element.style.top = `${bubble.y - bubble.size}px`;
-        bubble.element.style.opacity = `${0.52 * progress}`;
-        bubble.element.style.transform = `scale(${scale})`;
-
-        if (bubble.remaining <= 0) {
-          bubble.element.remove();
-          bubbles.splice(index, 1);
-        }
-      }
-
-      animationFrame = requestAnimationFrame(animate);
-    };
-
-    window.addEventListener('pointermove', onPointerMove, { passive: true });
-    animationFrame = requestAnimationFrame(animate);
+    document.addEventListener('mousedown', handleClickOutside);
 
     return () => {
-      window.removeEventListener('pointermove', onPointerMove);
-      cancelAnimationFrame(animationFrame);
-      bubbles.forEach((bubble) => bubble.element.remove());
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 
-  const handleInputChange = (event) => {
-    const { name, value } = event.target;
-    setFormData((previous) => ({ ...previous, [name]: value }));
+  const getUserSuggestions = (search, excludedIds = []) => {
+    const query = search.trim().toLowerCase();
+
+    return slackUsers
+      .filter((user) => !excludedIds.includes(user.userId))
+      .filter((user) => {
+        if (!query) return true;
+
+        return (
+          user.name?.toLowerCase().includes(query) ||
+          user.realName?.toLowerCase().includes(query) ||
+          user.email?.toLowerCase().includes(query)
+        );
+      })
+      .slice(0, 8);
   };
 
-  const handleUserChange = (event) => {
-    const userId = event.target.value;
-    const user = slackUsers.find((item) => item.userId === userId);
+  const handleUserSearch = (event) => {
+    const value = event.target.value;
+
+    setUserSearch(value);
+
+    const selectedUser =
+      slackUsers.find(
+        (user) =>
+          user.userId === formData.userId &&
+          user.name === value
+      ) || null;
 
     setFormData((previous) => ({
       ...previous,
-      user: user?.name || '',
-      userId,
+      user: value,
+      userId: selectedUser ? selectedUser.userId : '',
     }));
+
+    setShowUserSuggestions(true);
   };
 
-  const handleCcChange = (event) => {
-    const ccUserIds = event.target.value ? [event.target.value] : [];
-    setFormData((previous) => ({ ...previous, ccUserIds }));
+  const handleUserFocus = () => {
+    setShowUserSuggestions(true);
+  };
+
+  const handleUserSelect = (user) => {
+    setUserSearch(user.name);
+
+    setFormData((previous) => ({
+      ...previous,
+      user: user.name,
+      userId: user.userId,
+    }));
+
+    setShowUserSuggestions(false);
+  };
+
+  const handleCcSearch = (event) => {
+    setCcSearch(event.target.value);
+    setShowCcSuggestions(true);
+  };
+
+  const handleCcFocus = () => {
+    setShowCcSuggestions(true);
+  };
+
+  const handleCcSelect = (user) => {
+    if (
+      user.userId === formData.userId ||
+      formData.ccUserIds.includes(user.userId)
+    ) {
+      return;
+    }
+
+    setFormData((previous) => ({
+      ...previous,
+      ccUserIds: [...previous.ccUserIds, user.userId],
+    }));
+
+    setCcSearch('');
+    setShowCcSuggestions(true);
+  };
+
+  const handleRemoveCc = (userId) => {
+    setFormData((previous) => ({
+      ...previous,
+      ccUserIds: previous.ccUserIds.filter((id) => id !== userId),
+    }));
   };
 
   const handlePlatformChange = (event) => {
     const platform = event.target.value;
     setFormData((previous) => ({ ...previous, platform }));
     setSelectedChannel(getPlatformChannel(platform).name);
+  };
+
+  const handleInputChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((previous) => ({ ...previous, [name]: value }));
   };
 
   const handleFileChange = (event) => {
@@ -214,6 +233,10 @@ export default function Home() {
 
   const resetForm = () => {
     setFormData({ ...INITIAL_FORM, attachments: [] });
+    setUserSearch('');
+    setCcSearch('');
+    setShowUserSuggestions(false);
+    setShowCcSuggestions(false);
     setSelectedChannel(DEFAULT_CHANNEL.name);
   };
 
@@ -260,7 +283,7 @@ export default function Home() {
       !formData.description ||
       !formData.userId
     ) {
-      alert('Please fill all required fields.');
+      alert('Please select your name from the suggestions and fill all required fields.');
       return;
     }
 
@@ -302,6 +325,7 @@ export default function Home() {
       }
 
       const timestamp = new Date().toLocaleString();
+
       const entry = {
         timestamp,
         channel: selectedChannel,
@@ -332,6 +356,16 @@ export default function Home() {
     formData.ccUserIds.includes(user.userId)
   );
 
+  const userSuggestions = getUserSuggestions(
+    userSearch,
+    formData.userId ? [formData.userId] : []
+  );
+
+  const ccSuggestions = getUserSuggestions(
+    ccSearch,
+    [formData.userId, ...formData.ccUserIds]
+  );
+
   return (
     <>
       <Head>
@@ -344,8 +378,6 @@ export default function Home() {
       </Head>
 
       <main className="ksc-page">
-        <div ref={bubbleLayerRef} className="bubble-layer" aria-hidden="true" />
-
         <div className="ksc-shell">
           <header className="ksc-header">
             <div className="brand-mark">
@@ -416,6 +448,7 @@ export default function Home() {
                   <div className="history-meta">
                     #{index + 1} · {entry.timestamp}
                   </div>
+
                   <div className="history-main">
                     <strong>{entry.data.user}</strong>
                     <span>{entry.data.category}</span>
@@ -436,6 +469,7 @@ export default function Home() {
                 Your request for <strong>{submissionSuccess.platform}</strong> was
                 sent to <strong>#{submissionSuccess.channel}</strong>.
               </p>
+
               <button
                 type="button"
                 className="button button-primary"
@@ -457,61 +491,139 @@ export default function Home() {
 
               <form onSubmit={handleSubmit}>
                 <div className="form-grid">
+                  {/* YOUR NAME */}
                   <Field label="Your Name" required>
-                    <select
-                      value={formData.userId}
-                      onChange={handleUserChange}
-                      disabled={usersLoading || slackUsers.length === 0}
-                      className="form-control"
+                    <div
+                      ref={userFieldRef}
+                      className="autocomplete-wrapper"
                     >
-                      <option value="">
-                        {usersLoading
-                          ? 'Loading Slack users...'
-                          : usersError
-                            ? 'Users unavailable'
-                            : 'Select a user'}
-                      </option>
-                      {slackUsers.map((user) => (
-                        <option key={user.userId} value={user.userId}>
-                          {user.name}
-                        </option>
-                      ))}
-                    </select>
+                      <input
+                        type="text"
+                        value={userSearch}
+                        onChange={handleUserSearch}
+                        onFocus={handleUserFocus}
+                        disabled={usersLoading || slackUsers.length === 0}
+                        placeholder={
+                          usersLoading
+                            ? 'Loading Slack users...'
+                            : usersError
+                              ? 'Users unavailable'
+                              : 'Start typing your name'
+                        }
+                        autoComplete="off"
+                        className="form-control"
+                      />
+
+                      {showUserSuggestions &&
+                        !usersLoading &&
+                        userSuggestions.length > 0 && (
+                          <div className="suggestions-list">
+                            {userSuggestions.map((user) => (
+                              <button
+                                key={user.userId}
+                                type="button"
+                                className="suggestion-item"
+                                onMouseDown={(event) =>
+                                  event.preventDefault()
+                                }
+                                onClick={() => handleUserSelect(user)}
+                              >
+                                {user.name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                    </div>
                   </Field>
 
+                  {/* CC */}
                   <Field
                     label="CC"
-                    hint="Optional: select one additional person to mention in the ticket."
+                    hint="Optional: type a name and select multiple people to mention in the ticket."
                   >
-                    <select
-                      value={formData.ccUserIds[0] || ''}
-                      onChange={handleCcChange}
-                      disabled={usersLoading || slackUsers.length === 0}
-                      className="form-control"
+                    <div
+                      ref={ccFieldRef}
+                      className="autocomplete-wrapper"
                     >
-                      <option value="">No CC user</option>
-                      {slackUsers.map((user) => (
-                        <option key={user.userId} value={user.userId}>
-                          {user.name}
-                        </option>
-                      ))}
-                    </select>
+                      <div className="multi-select-control">
+                        {selectedCcUsers.map((user) => (
+                          <span
+                            key={user.userId}
+                            className="cc-chip"
+                          >
+                            <span>{user.name}</span>
+
+                            <button
+                              type="button"
+                              className="cc-chip-remove"
+                              onClick={() =>
+                                handleRemoveCc(user.userId)
+                              }
+                              aria-label={`Remove ${user.name}`}
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+
+                        <input
+                          type="text"
+                          value={ccSearch}
+                          onChange={handleCcSearch}
+                          onFocus={handleCcFocus}
+                          disabled={
+                            usersLoading || slackUsers.length === 0
+                          }
+                          placeholder={
+                            selectedCcUsers.length > 0
+                              ? 'Add another user'
+                              : 'Start typing a name'
+                          }
+                          autoComplete="off"
+                          className="multi-select-input"
+                        />
+                      </div>
+
+                      {showCcSuggestions &&
+                        !usersLoading &&
+                        ccSuggestions.length > 0 && (
+                          <div className="suggestions-list">
+                            {ccSuggestions.map((user) => (
+                              <button
+                                key={user.userId}
+                                type="button"
+                                className="suggestion-item"
+                                onMouseDown={(event) =>
+                                  event.preventDefault()
+                                }
+                                onClick={() => handleCcSelect(user)}
+                              >
+                                {user.name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                    </div>
                   </Field>
 
+                  {/* CATEGORY */}
                   <Field label="Category" required>
-                    <select
-                      name="category"
-                      value={formData.category}
-                      onChange={handleInputChange}
-                      className="form-control"
-                    >
-                      <option value="">Select an option</option>
-                      {categoryOptions.map((category) => (
-                        <option key={category} value={category}>
-                          {category}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="select-wrapper">
+                      <select
+                        name="category"
+                        value={formData.category}
+                        onChange={handleInputChange}
+                        className="form-control"
+                      >
+                        <option value="">Select an option</option>
+
+                        {categoryOptions.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </Field>
 
                   {formData.category === 'Other' && (
@@ -527,42 +639,51 @@ export default function Home() {
                     </Field>
                   )}
 
+                  {/* PRIORITY */}
                   <Field label="Priority" required>
-                    <select
-                      name="priority"
-                      value={formData.priority}
-                      onChange={handleInputChange}
-                      className="form-control"
-                    >
-                      <option value="High">🔴 High</option>
-                      <option value="Medium">🟡 Medium</option>
-                      <option value="Low">🟢 Low</option>
-                    </select>
+                    <div className="select-wrapper">
+                      <select
+                        name="priority"
+                        value={formData.priority}
+                        onChange={handleInputChange}
+                        className="form-control"
+                      >
+                        <option value="High">🔴 High</option>
+                        <option value="Medium">🟡 Medium</option>
+                        <option value="Low">🟢 Low</option>
+                      </select>
+                    </div>
                   </Field>
 
+                  {/* PLATFORM */}
                   <Field label="Which Platform" required>
-                    <select
-                      name="platform"
-                      value={formData.platform}
-                      onChange={handlePlatformChange}
-                      className="form-control"
-                    >
-                      <option value="">Select an option</option>
-                      {platformOptions.map((platform) => (
-                        <option key={platform} value={platform}>
-                          {platform}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="select-wrapper">
+                      <select
+                        name="platform"
+                        value={formData.platform}
+                        onChange={handlePlatformChange}
+                        className="form-control"
+                      >
+                        <option value="">Select an option</option>
+
+                        {platformOptions.map((platform) => (
+                          <option key={platform} value={platform}>
+                            {platform}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
                     {formData.platform && (
                       <div className="routing-note">
                         <span className="routing-dot" />
-                        This ticket will be sent to <strong>#{selectedChannel}</strong>
+                        This ticket will be sent to{' '}
+                        <strong>#{selectedChannel}</strong>
                       </div>
                     )}
                   </Field>
 
+                  {/* WHERE */}
                   <Field label="Where it is Happening" required>
                     <input
                       type="text"
@@ -574,6 +695,7 @@ export default function Home() {
                     />
                   </Field>
 
+                  {/* EXPECTED VS ACTUAL */}
                   <Field
                     label="Expected vs. Actual"
                     hint="Optional: explain what you expected to happen and what happened instead."
@@ -582,11 +704,12 @@ export default function Home() {
                       name="expectedVsActual"
                       value={formData.expectedVsActual}
                       onChange={handleInputChange}
-                      placeholder="Expected: ...&#10;Actual: ..."
+                      placeholder={'Expected: ...\nActual: ...'}
                       className="form-control textarea"
                     />
                   </Field>
 
+                  {/* ATTACHMENTS */}
                   <Field
                     label="Attachments"
                     hint="Screenshots are helpful for UI bugs and website issues. Max 5 MB per file."
@@ -597,10 +720,14 @@ export default function Home() {
                         multiple
                         onChange={handleFileChange}
                       />
+
                       <span className="upload-icon">＋</span>
+
                       <span>
                         <strong>Choose files</strong>
-                        <small>Upload screenshots or supporting files</small>
+                        <small>
+                          Upload screenshots or supporting files
+                        </small>
                       </span>
                     </label>
 
@@ -612,6 +739,7 @@ export default function Home() {
                     )}
                   </Field>
 
+                  {/* DESCRIPTION */}
                   <div className="field field-full">
                     <Field label="Ticket Description" required>
                       <textarea
@@ -627,9 +755,12 @@ export default function Home() {
 
                 <div className="cc-preview">
                   <div className="cc-preview-label">CC</div>
+
                   <div>
                     {selectedCcUsers.length > 0
-                      ? selectedCcUsers.map((user) => user.name).join(', ')
+                      ? selectedCcUsers
+                          .map((user) => user.name)
+                          .join(', ')
                       : 'No additional users selected'}
                   </div>
                 </div>
@@ -655,7 +786,9 @@ export default function Home() {
                       disabled={loading || usersLoading}
                     >
                       {loading ? 'Submitting...' : 'Submit request'}
-                      {!loading && <span aria-hidden="true">→</span>}
+                      {!loading && (
+                        <span aria-hidden="true">→</span>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -669,6 +802,141 @@ export default function Home() {
           </footer>
         </div>
       </main>
+
+      <style jsx>{`
+        .autocomplete-wrapper {
+          position: relative;
+          width: 100%;
+        }
+
+        .suggestions-list {
+          position: absolute;
+          top: calc(100% + 4px);
+          left: 0;
+          right: 0;
+          z-index: 100;
+          max-height: 220px;
+          overflow-y: auto;
+          background: #ffffff;
+          border: 1px solid #e7c5d1;
+          border-radius: 12px;
+          box-shadow: 0 12px 28px rgba(139, 94, 60, 0.14);
+        }
+
+        .suggestion-item {
+          display: block;
+          width: 100%;
+          padding: 10px 13px;
+          border: 0;
+          border-bottom: 1px solid #f3e4e9;
+          background: #ffffff;
+          color: var(--ksc-text);
+          text-align: left;
+          font-size: 14px;
+          cursor: pointer;
+        }
+
+        .suggestion-item:last-child {
+          border-bottom: 0;
+        }
+
+        .suggestion-item:hover {
+          background: var(--ksc-pink-soft);
+          color: var(--ksc-brown-dark);
+        }
+
+        .multi-select-control {
+          width: 100%;
+          min-height: 45px;
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 6px;
+          padding: 5px 13px;
+          border: 1px solid #e7c5d1;
+          border-radius: 12px;
+          background: #fffafd;
+          color: var(--ksc-text);
+        }
+
+        .multi-select-control:focus-within {
+          border-color: var(--ksc-blue);
+          box-shadow: 0 0 0 4px rgba(154, 219, 239, 0.22);
+        }
+
+        .cc-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 5px 8px 5px 9px;
+          border-radius: 999px;
+          background: var(--ksc-pink-soft);
+          color: var(--ksc-brown);
+          font-size: 12px;
+          font-weight: 700;
+          white-space: nowrap;
+        }
+
+        .cc-chip-remove {
+          width: 17px;
+          height: 17px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+          border: 0;
+          border-radius: 50%;
+          background: transparent;
+          color: var(--ksc-brown);
+          cursor: pointer;
+          font-size: 15px;
+          line-height: 1;
+        }
+
+        .cc-chip-remove:hover {
+          background: rgba(237, 127, 156, 0.16);
+        }
+
+        .multi-select-input {
+          flex: 1;
+          min-width: 130px;
+          height: 32px;
+          padding: 0;
+          border: 0;
+          outline: 0;
+          background: transparent;
+          color: var(--ksc-text);
+          font-size: 14px;
+        }
+
+        .multi-select-input::placeholder {
+          color: #b5a29a;
+        }
+
+        .select-wrapper {
+          position: relative;
+        }
+
+        .select-wrapper::after {
+          content: '';
+          position: absolute;
+          top: 50%;
+          right: 14px;
+          width: 7px;
+          height: 7px;
+          border-right: 1.5px solid var(--ksc-brown);
+          border-bottom: 1.5px solid var(--ksc-brown);
+          transform: translateY(-65%) rotate(45deg);
+          pointer-events: none;
+        }
+
+        .select-wrapper .form-control {
+          appearance: none;
+          -webkit-appearance: none;
+          padding-right: 42px;
+          cursor: pointer;
+        }
+      `}</style>
     </>
   );
 }
